@@ -1,4 +1,4 @@
-# ali-smart-buy
+# smart-buy-cl
 
 Herramienta personal para comparar productos de AliExpress antes de comprar, pensada para compradores en Chile.
 
