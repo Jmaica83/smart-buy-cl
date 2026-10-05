@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Buy CL</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">Smart Buy <span>CL</span></div>
+  <div id="mode" class="badge"></div>
+  <div id="fx" class="muted"></div>
+</header>
+
+<div class="layout">
+  <aside class="panel">
+    <form id="form">
+      <label>¿Qué buscas?
+        <input name="q" value="cable usb c ssd" required>
+      </label>
+      <label>Presupuesto máximo (CLP, total puesto en Chile)
+        <input name="budget" type="number" min="0" step="500" placeholder="Sin límite">
+      </label>
+      <label>Debe tener <small>coma separa requisitos, | separa alternativas</small>
+        <input name="must" value="10Gbps|20Gbps|40Gbps">
+      </label>
+      <label>Deseable
+        <input name="nice" value="E-Marker: Sí, trenzado, 0.5 m|0.3 m">
+      </label>
+      <label>Descartar si tiene
+        <input name="exclude" value="USB 2.0, 480Mbps">
+      </label>
+
+      <fieldset>
+        <legend>Qué te importa más</legend>
+        <label class="slider">Precio <input type="range" name="w_price" min="0" max="10" value="6"><output></output></label>
+        <label class="slider">Vendedor <input type="range" name="w_seller" min="0" max="10" value="5"><output></output></label>
+        <label class="slider">Producto y reseñas <input type="range" name="w_product" min="0" max="10" value="6"><output></output></label>
+        <label class="slider">Deseables <input type="range" name="w_nice" min="0" max="10" value="4"><output></output></label>
+      </fieldset>
+
+      <label class="check"><input type="checkbox" name="group" checked> Agrupar clones (mejor oferta de cada uno)</label>
+      <label class="check"><input type="checkbox" name="iva_included"> El precio ya incluye IVA</label>
+
+      <button type="submit">Buscar y comparar</button>
+    </form>
+  </aside>
+
+  <main>
+    <nav class="tabs">
+      <button data-tab="ranking" class="active">Ranking <span id="n-ranking"></span></button>
+      <button data-tab="compare">Comparar <span id="n-compare"></span></button>
+      <button data-tab="discarded">Descartados <span id="n-discarded"></span></button>
+      <button data-tab="shortlist">Lista corta <span id="n-shortlist"></span></button>
+    </nav>
+    <div id="status" class="muted"></div>
+    <section id="tab-ranking" class="tab active"></section>
+    <section id="tab-compare" class="tab"></section>
+    <section id="tab-discarded" class="tab"></section>
+    <section id="tab-shortlist" class="tab"></section>
+  </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

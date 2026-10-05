@@ -1,0 +1,10 @@
+{
+  "reviews": {
+    "source": "Datos de prueba",
+    "read": 60,
+    "with_photos": 18,
+    "summary": "Compradores confirman ~1000 MB/s con SSD NVMe en carcasa 10Gbps. Cable firme, conector ajusta bien.",
+    "flags": [],
+    "positives": ["Velocidad confirmada con capturas", "Buena terminación", "Llegó en 10-14 días"]
+  }
+}

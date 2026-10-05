@@ -1,0 +1,110 @@
+[
+  {
+    "id": "m01", "title": "UGREEN Cable USB C a USB C 3.2 Gen 2 10Gbps 100W E-Marker para SSD externo 0.5m",
+    "url": "https://www.aliexpress.com/item/m01.html", "image": null,
+    "price_usd": 6.9, "original_price_usd": 11.5, "shipping_usd": 0, "ship_days": 12,
+    "rating_pct": 97.1, "sold": 8400,
+    "store": {"id": "s1", "name": "UGREEN Official Store", "url": "", "positive_pct": 97.8, "years": 8, "official": true, "choice": true},
+    "specs": {"Velocidad": "10Gbps", "Estándar": "USB 3.2 Gen 2", "Potencia": "100W", "E-Marker": "Sí", "Largo": "0.5 m", "Material": "Nylon trenzado"},
+    "category": "Cables", "source": "mock"
+  },
+  {
+    "id": "m02", "title": "Baseus Cable USB4 40Gbps Tipo C 240W 8K Thunderbolt compatible 1m",
+    "url": "https://www.aliexpress.com/item/m02.html", "image": null,
+    "price_usd": 13.4, "original_price_usd": 22.0, "shipping_usd": 0, "ship_days": 14,
+    "rating_pct": 96.0, "sold": 2100,
+    "store": {"id": "s2", "name": "Baseus Official Store", "url": "", "positive_pct": 96.9, "years": 7, "official": true, "choice": true},
+    "specs": {"Velocidad": "40Gbps", "Estándar": "USB4", "Potencia": "240W", "E-Marker": "Sí", "Largo": "1 m", "Material": "Nylon trenzado"},
+    "category": "Cables", "source": "mock"
+  },
+  {
+    "id": "m03", "title": "Cable USB C a USB C carga rápida 60W PD tipo C trenzado 1m",
+    "url": "https://www.aliexpress.com/item/m03.html", "image": null,
+    "price_usd": 1.2, "original_price_usd": 3.9, "shipping_usd": 0.8, "ship_days": 20,
+    "rating_pct": 93.0, "sold": 51000,
+    "store": {"id": "s3", "name": "Shenzhen Cable Factory Store", "url": "", "positive_pct": 92.4, "years": 3, "official": false, "choice": true},
+    "specs": {"Velocidad": "480Mbps", "Estándar": "USB 2.0", "Potencia": "60W", "E-Marker": "No", "Largo": "1 m", "Material": "Nylon trenzado"},
+    "category": "Cables", "source": "mock"
+  },
+  {
+    "id": "m04", "title": "Cable USB C 3.1 Gen 2 10Gbps tipo C a tipo C 100W 4K video para SSD 0.3m",
+    "url": "https://www.aliexpress.com/item/m04.html", "image": null,
+    "price_usd": 2.8, "original_price_usd": 7.0, "shipping_usd": 0, "ship_days": 18,
+    "rating_pct": 94.5, "sold": 6200,
+    "store": {"id": "s4", "name": "Digital Life Store", "url": "", "positive_pct": 94.1, "years": 4, "official": false, "choice": true},
+    "specs": {"Velocidad": "10Gbps", "Estándar": "USB 3.1 Gen 2", "Potencia": "100W", "E-Marker": "Sí", "Largo": "0.3 m", "Material": "TPE"},
+    "category": "Cables", "source": "mock"
+  },
+  {
+    "id": "m05", "title": "Cable USB C 3.1 Gen 2 10Gbps tipo C a tipo C 100W 4K video SSD 0.3m",
+    "url": "https://www.aliexpress.com/item/m05.html", "image": null,
+    "price_usd": 2.3, "original_price_usd": 6.5, "shipping_usd": 1.2, "ship_days": 25,
+    "rating_pct": 90.2, "sold": 1800,
+    "store": {"id": "s5", "name": "Top Gadget Mall", "url": "", "positive_pct": 90.8, "years": 1, "official": false, "choice": false},
+    "specs": {"Velocidad": "10Gbps", "Estándar": "USB 3.1 Gen 2", "Potencia": "100W", "E-Marker": "Sí", "Largo": "0.3 m", "Material": "TPE"},
+    "category": "Cables", "source": "mock"
+  },
+  {
+    "id": "m06", "title": "Cable USB C 3.1 Gen 2 10Gbps tipo C a tipo C 100W 4K video para disco SSD 0.3m",
+    "url": "https://www.aliexpress.com/item/m06.html", "image": null,
+    "price_usd": 2.6, "original_price_usd": 5.9, "shipping_usd": 0, "ship_days": 16,
+    "rating_pct": 95.3, "sold": 3400,
+    "store": {"id": "s6", "name": "Essential Accessories Store", "url": "", "positive_pct": 95.6, "years": 5, "official": false, "choice": true},
+    "specs": {"Velocidad": "10Gbps", "Estándar": "USB 3.1 Gen 2", "Potencia": "100W", "E-Marker": "Sí", "Largo": "0.3 m", "Material": "TPE"},
+    "category": "Cables", "source": "mock"
+  },
+  {
+    "id": "m07", "title": "Essager Cable USB C 20Gbps 3.2 Gen 2x2 100W E-Marker trenzado SSD 1m",
+    "url": "https://www.aliexpress.com/item/m07.html", "image": null,
+    "price_usd": 5.4, "original_price_usd": 9.8, "shipping_usd": 0, "ship_days": 13,
+    "rating_pct": 96.4, "sold": 4700,
+    "store": {"id": "s7", "name": "Essager Official Store", "url": "", "positive_pct": 96.2, "years": 5, "official": true, "choice": true},
+    "specs": {"Velocidad": "20Gbps", "Estándar": "USB 3.2 Gen 2x2", "Potencia": "100W", "E-Marker": "Sí", "Largo": "1 m", "Material": "Nylon trenzado"},
+    "category": "Cables", "source": "mock"
+  },
+  {
+    "id": "m08", "title": "Vention Cable USB C a USB A 3.1 Gen 2 10Gbps para SSD y disco externo 0.5m",
+    "url": "https://www.aliexpress.com/item/m08.html", "image": null,
+    "price_usd": 3.9, "original_price_usd": 6.0, "shipping_usd": 0, "ship_days": 15,
+    "rating_pct": 96.8, "sold": 5100,
+    "store": {"id": "s8", "name": "Vention Official Store", "url": "", "positive_pct": 97.0, "years": 7, "official": true, "choice": true},
+    "specs": {"Velocidad": "10Gbps", "Estándar": "USB 3.1 Gen 2", "Potencia": "15W", "E-Marker": "No", "Largo": "0.5 m", "Material": "Nylon trenzado", "Conectores": "USB-C a USB-A"},
+    "category": "Cables", "source": "mock"
+  },
+  {
+    "id": "m09", "title": "Cable USB C 240W carga súper rápida PD 3.1 tipo C 2m",
+    "url": "https://www.aliexpress.com/item/m09.html", "image": null,
+    "price_usd": 2.1, "original_price_usd": 8.0, "shipping_usd": 0, "ship_days": 19,
+    "rating_pct": 92.0, "sold": 23000,
+    "store": {"id": "s9", "name": "Power Cable World", "url": "", "positive_pct": 91.5, "years": 2, "official": false, "choice": true},
+    "specs": {"Velocidad": "480Mbps", "Estándar": "USB 2.0", "Potencia": "240W", "E-Marker": "Sí", "Largo": "2 m", "Material": "Silicona"},
+    "category": "Cables", "source": "mock"
+  },
+  {
+    "id": "m10", "title": "Cable corto USB C 10Gbps ángulo 90 grados para SSD M.2 carcasa 0.2m",
+    "url": "https://www.aliexpress.com/item/m10.html", "image": null,
+    "price_usd": 3.1, "original_price_usd": 5.2, "shipping_usd": 0, "ship_days": 17,
+    "rating_pct": 95.0, "sold": 1200,
+    "store": {"id": "s10", "name": "Storage Tech Store", "url": "", "positive_pct": 95.9, "years": 4, "official": false, "choice": true},
+    "specs": {"Velocidad": "10Gbps", "Estándar": "USB 3.2 Gen 2", "Potencia": "60W", "E-Marker": "No", "Largo": "0.2 m", "Material": "TPE", "Forma": "Codo 90°"},
+    "category": "Cables", "source": "mock"
+  },
+  {
+    "id": "m11", "title": "Cable USB C 3.0 5Gbps tipo C transferencia de datos 1m",
+    "url": "https://www.aliexpress.com/item/m11.html", "image": null,
+    "price_usd": 1.6, "original_price_usd": 4.0, "shipping_usd": 0, "ship_days": 21,
+    "rating_pct": 93.8, "sold": 9800,
+    "store": {"id": "s11", "name": "Daily Cable Store", "url": "", "positive_pct": 93.2, "years": 3, "official": false, "choice": true},
+    "specs": {"Velocidad": "5Gbps", "Estándar": "USB 3.2 Gen 1", "Potencia": "60W", "E-Marker": "No", "Largo": "1 m", "Material": "TPE"},
+    "category": "Cables", "source": "mock"
+  },
+  {
+    "id": "m12", "title": "Cable Thunderbolt 4 USB4 40Gbps 100W certificado 0.8m",
+    "url": "https://www.aliexpress.com/item/m12.html", "image": null,
+    "price_usd": 9.8, "original_price_usd": 18.0, "shipping_usd": 2.5, "ship_days": 22,
+    "rating_pct": 91.0, "sold": 640,
+    "store": {"id": "s12", "name": "TB Cable Pro", "url": "", "positive_pct": 92.0, "years": 2, "official": false, "choice": false},
+    "specs": {"Velocidad": "40Gbps", "Estándar": "Thunderbolt 4", "Potencia": "100W", "E-Marker": "Sí", "Largo": "0.8 m", "Material": "Nylon trenzado"},
+    "category": "Cables", "source": "mock"
+  }
+]

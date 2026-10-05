@@ -1,0 +1,10 @@
+{
+  "reviews": {
+    "source": "Datos de prueba",
+    "read": 40,
+    "with_photos": 9,
+    "summary": "Varios compradores reportan que el cable no es reconocido como Thunderbolt y transfiere a 10Gbps, no 40Gbps. Empaque llega dañado con frecuencia.",
+    "flags": ["Velocidad menor a la anunciada", "No coincide con la descripción"],
+    "positives": ["Buen largo", "Carga a 100W sin problemas"]
+  }
+}
