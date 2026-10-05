@@ -124,7 +124,7 @@ function explain(r, minTotal) {
   if (s.official) out.push(["pro", "Tienda oficial de la marca"]);
   if (s.positive_pct != null) out.push([s.positive_pct >= 95 ? "pro" : "con", `Tienda con ${s.positive_pct}% de feedback positivo`]);
   if (s.years != null && s.years < 2) out.push(["con", `Tienda nueva (${s.years} año${s.years === 1 ? "" : "s"})`]);
-  if (!r.sellerKnown) out.push(["con", "Sin datos de la tienda (pídeme revisarla en Chrome)"]);
+  if (!r.sellerKnown) out.push(["con", "Sin datos de la tienda (la API no los entrega)"]);
   if (p.rating_pct != null) out.push([p.rating_pct >= 95 ? "pro" : "con", `${p.rating_pct}% de valoraciones positivas, ${p.sold.toLocaleString("es-CL")} vendidos`]);
   if (!r.cost.shipKnown) out.push(["con", "Costo de envío desconocido (no incluido)"]);
   else if (p.ship_days) out.push([p.ship_days <= 15 ? "pro" : "con", `Llega en ~${p.ship_days} días`]);
@@ -149,7 +149,8 @@ function card(r, i) {
     const hit = r.niceHits.some(h => `${k}: ${v}`.toLowerCase().includes(h) || p.title.toLowerCase().includes(h) && String(v).toLowerCase().includes(h));
     return `<span class="chip${hit ? " hit" : ""}">${esc(k)}: ${esc(v)}</span>`;
   }).join("");
-  const rev = p.reviews ? `<div class="review"><b>Reseñas leídas (${p.reviews.read}, ${p.reviews.with_photos} con foto):</b> ${esc(p.reviews.summary)}</div>` : "";
+  const rev = reviewBlock(p.reviews);
+  const canRead = /^\d+$/.test(p.id);
   const clones = r.clones?.length ? `<div class="clones">Mismo producto en ${r.clones.length} tienda${r.clones.length > 1 ? "s" : ""} más: ${r.clones.map(x => `${esc(x.p.store.name)} (${clp(x.cost.total)})`).join(", ")}</div>` : "";
   return `
   <article class="card${i === 0 ? " top1" : ""}">
@@ -168,9 +169,23 @@ function card(r, i) {
       <div class="actions">
         <button data-compare="${esc(p.id)}" class="${compareIds.has(p.id) ? "on" : ""}">Comparar</button>
         <button data-short="${esc(p.id)}" class="${inShort ? "on" : ""}">${inShort ? "En lista" : "Lista corta"}</button>
+        ${canRead ? `<button data-reviews="${esc(p.id)}">${p.reviews ? "Actualizar reseñas" : "Leer reseñas"}</button>` : ""}
       </div>
     </div>
   </article>`;
+}
+
+function reviewBlock(r) {
+  if (!r) return "";
+  const head = r.total != null
+    ? `<b>Reseñas:</b> ${r.stars ?? "?"}★ de ${r.total.toLocaleString("es-CL")} (${r.with_photos} con foto, ${r.negative_pct ?? "?"}% negativas) · leídas ${r.read}`
+    : `<b>Reseñas leídas (${r.read}, ${r.with_photos} con foto)</b>`;
+  const parts = [head];
+  if (r.summary) parts.push(esc(r.summary));
+  if (r.labels?.length) parts.push(r.labels.map(esc).join(" · "));
+  if (r.chile?.length) parts.push("<b>Desde Chile:</b> " + r.chile.map(t => `“${esc(t)}”`).join(" "));
+  if (r.worst?.length) parts.push(`<details><summary>Peores reseñas (${r.worst.length})</summary>${r.worst.map(w => `<p>${"★".repeat(w.stars)} ${esc(w.text)} <span class="muted">${esc(w.variant)}</span></p>`).join("")}</details>`);
+  return `<div class="review">${parts.join("<br>")}</div>`;
 }
 
 function renderRanking() {
@@ -290,6 +305,21 @@ document.addEventListener("click", async e => {
       shortlist.push({ id, title: r.p.title, url: r.p.url, store: r.p.store.name, total_clp: r.cost.total, score: r.score, status: "pending", note: "" });
     }
     await saveShortlist(); renderRanking(); renderShortlist();
+  } else if (t.dataset.reviews) {
+    const id = t.dataset.reviews;
+    t.disabled = true; t.textContent = "Leyendo…";
+    try {
+      const res = await fetch("/api/reviews?id=" + encodeURIComponent(id), { method: "POST" });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      const p = lastProducts.find(p => p.id === id);
+      p.reviews = data.reviews;
+      if (p.rating_pct == null) p.rating_pct = data.rating_pct;
+      recompute();
+    } catch (err) {
+      t.disabled = false; t.textContent = "Reintentar reseñas";
+      $("#status").textContent = err.message;
+    }
   } else if (t.dataset.approve) {
     const s = shortlist.find(s => s.id === t.dataset.approve);
     s.status = s.status === "approved" ? "pending" : "approved";

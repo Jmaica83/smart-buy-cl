@@ -14,13 +14,14 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 import aliexpress_api
+import reviews
 
 ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data"
 STATIC = ROOT / "static"
 ENRICH = DATA / "enrich"
 SHORTLIST = DATA / "shortlist.json"
-PORT = 8000
+PORT = int(os.environ.get("PORT") or 8000)
 
 
 def load_env():
@@ -74,9 +75,11 @@ def apply_enrichment(products):
         for key, value in store.items():
             if value is not None:
                 p["store"][key] = value
-        for key in ("shipping_usd", "ship_days", "rating_pct", "specs"):
+        for key in ("shipping_usd", "ship_days", "specs"):
             if extra.get(key) is not None:
                 p[key] = extra.pop(key)
+        if p.get("rating_pct") is None and extra.get("rating_pct") is not None:
+            p["rating_pct"] = extra["rating_pct"]
         p["reviews"] = extra.get("reviews")
     return products
 
@@ -115,7 +118,21 @@ class Handler(SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
-        if urlparse(self.path).path != "/api/shortlist":
+        url = urlparse(self.path)
+        if url.path == "/api/reviews":
+            product_id = parse_qs(url.query).get("id", [""])[0]
+            if not product_id.isdigit():
+                return self.send_json({"error": "Solo productos reales tienen reseñas"}, 400)
+            try:
+                fresh = reviews.fetch_reviews(product_id)
+            except Exception as exc:
+                return self.send_json({"error": f"No se pudieron leer las reseñas: {exc}"}, 502)
+            path = ENRICH / f"{product_id}.json"
+            merged = read_json(path, {})
+            merged.update(fresh)
+            path.write_text(json.dumps(merged, ensure_ascii=False, indent=2), encoding="utf-8")
+            return self.send_json(fresh)
+        if url.path != "/api/shortlist":
             return self.send_json({"error": "not found"}, 404)
         length = int(self.headers.get("Content-Length", 0))
         items = json.loads(self.rfile.read(length) or b"[]")
