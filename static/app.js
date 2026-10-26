@@ -23,6 +23,31 @@ function haystack(p) {
 }
 const matches = (hay, alts) => alts.some(a => hay.includes(a));
 
+// ---------- tipo de producto ----------
+// AliExpress devuelve productos "relacionados" (un adaptador cuyo título menciona "cable").
+// El tipo de un producto es la primera palabra de esta lista que aparece en su título.
+const PRODUCT_TYPES = new Set(("cable adaptador cargador hub concentrador carcasa caja funda soporte convertidor " +
+  "conector extension auricular audifono teclado mouse raton lampara bateria disco ssd memoria tarjeta lector " +
+  "dock estacion switch camara reloj smartwatch zapatilla zapato polera camiseta chaqueta pantalon mochila bolso " +
+  "taladro destornillador atornillador sierra bombilla ampolleta foco enchufe regleta router antena microfono " +
+  "parlante altavoz protector mica vidrio llavero organizador").split(" "));
+const TYPE_ARTICLE = { cable: "un", adaptador: "un", cargador: "un", hub: "un", concentrador: "un", convertidor: "un", conector: "un" };
+
+function singular(w) {
+  if (PRODUCT_TYPES.has(w)) return w;
+  if (w.endsWith("es") && PRODUCT_TYPES.has(w.slice(0, -2))) return w.slice(0, -2);
+  if (w.endsWith("s") && PRODUCT_TYPES.has(w.slice(0, -1))) return w.slice(0, -1);
+  return w;
+}
+function productType(text) {
+  const words = String(text).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").split(/[^a-z0-9]+/);
+  for (const w of words) {
+    const s = singular(w);
+    if (PRODUCT_TYPES.has(s)) return s;
+  }
+  return null;
+}
+
 // ---------- costo real en Chile ----------
 let shipEstimate = 0;
 
@@ -82,6 +107,7 @@ function evaluate(products, f) {
   const budget = Number(f.budget) || Infinity;
   const ok = [], out = [];
 
+  const wantedType = f.type_only ? productType(f.q) : null;
   const knownShip = products.map(p => p.shipping_usd).filter(x => x != null).sort((a, b) => a - b);
   shipEstimate = knownShip.length ? knownShip[Math.floor(knownShip.length / 2)] : 0;
 
@@ -92,6 +118,8 @@ function evaluate(products, f) {
     const missing = must.filter(alts => !matches(hay, alts)).map(a => a.join(" o "));
     const banned = exclude.filter(alts => matches(hay, alts)).map(a => a.join(" o "));
     const reasons = [];
+    const type = wantedType && productType(p.title);
+    if (type && type !== wantedType) reasons.push(`Parece ${TYPE_ARTICLE[type] || "un(a)"} ${type}, no ${TYPE_ARTICLE[wantedType] || "un(a)"} ${wantedType}`);
     if (missing.length) reasons.push("No cumple: " + missing.join(", "));
     if (banned.length) reasons.push("Tiene algo descartado: " + banned.join(", "));
     if (cost.total > budget) reasons.push(`Sobre presupuesto (${clp(cost.total)})`);
@@ -175,6 +203,7 @@ function form() {
   const fd = new FormData($("#form"));
   const f = Object.fromEntries(fd.entries());
   f.group = fd.has("group");
+  f.type_only = fd.has("type_only");
   f.iva_included = fd.has("iva_included");
   return f;
 }
@@ -388,6 +417,48 @@ document.addEventListener("change", async e => {
   }
 });
 
+// ---------- búsquedas guardadas ----------
+let searches = [];
+
+function renderSaved(selected = "") {
+  $("#saved").innerHTML = `<option value="">Búsquedas guardadas…</option>` +
+    searches.map(s => `<option${s.name === selected ? " selected" : ""}>${esc(s.name)}</option>`).join("");
+}
+function applySearch(s) {
+  const f = $("#form");
+  for (const [key, value] of Object.entries(s)) {
+    const el = f.elements[key];
+    if (!el) continue;
+    if (el.type === "checkbox") el.checked = !!value;
+    else el.value = value;
+    if (el.type === "range") el.nextElementSibling.value = value;
+  }
+}
+async function saveSearches() {
+  await fetch("/api/searches", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(searches) });
+}
+$("#saved").addEventListener("change", e => {
+  const s = searches.find(s => s.name === e.target.value);
+  if (s) { applySearch(s); search(); }
+});
+$("#save-search").addEventListener("click", async () => {
+  const name = prompt("Nombre para esta búsqueda:", $("#saved").value || form().q);
+  if (!name) return;
+  const { group, iva_included, type_only, ...fields } = form();
+  const entry = { name, ...fields, group, iva_included, type_only };
+  const i = searches.findIndex(s => s.name === name);
+  if (i >= 0) searches[i] = entry; else searches.push(entry);
+  await saveSearches();
+  renderSaved(name);
+});
+$("#del-search").addEventListener("click", async () => {
+  const name = $("#saved").value;
+  if (!name || !confirm(`¿Borrar la búsqueda "${name}"?`)) return;
+  searches = searches.filter(s => s.name !== name);
+  await saveSearches();
+  renderSaved();
+});
+
 (async function init() {
   CONFIG = await (await fetch("/api/config")).json();
   $("#mode").textContent = CONFIG.mode === "api" ? "API real" : "Datos de prueba";
@@ -395,5 +466,7 @@ document.addEventListener("change", async e => {
   $("#fx").textContent = `US$1 ≈ ${clp(CONFIG.usd_clp)} · IVA ${CONFIG.iva * 100}%`;
   shortlist = await (await fetch("/api/shortlist")).json();
   renderShortlist();
+  searches = await (await fetch("/api/searches")).json();
+  renderSaved();
   search();
 })();

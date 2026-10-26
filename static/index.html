@@ -16,6 +16,11 @@
 <div class="layout">
   <aside class="panel">
     <form id="form">
+      <div class="saved">
+        <select id="saved" aria-label="Búsquedas guardadas"><option value="">Búsquedas guardadas…</option></select>
+        <button type="button" id="save-search" class="btn">Guardar</button>
+        <button type="button" id="del-search" class="btn">Borrar</button>
+      </div>
       <label>¿Qué buscas?
         <input name="q" value="cable usb c ssd" required>
       </label>
@@ -40,6 +45,7 @@
         <label class="slider">Deseables <input type="range" name="w_nice" min="0" max="10" value="4"><output></output></label>
       </fieldset>
 
+      <label class="check"><input type="checkbox" name="type_only" checked> Solo el tipo de producto buscado (descarta adaptadores si buscas cables, etc.)</label>
       <label class="check"><input type="checkbox" name="group" checked> Agrupar clones (mejor oferta de cada uno)</label>
       <label class="check"><input type="checkbox" name="iva_included"> El precio ya incluye IVA</label>
 

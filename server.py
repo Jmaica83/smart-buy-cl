@@ -24,6 +24,17 @@ DATA = ROOT / "data"
 STATIC = ROOT / "static"
 ENRICH = DATA / "enrich"
 SHORTLIST = DATA / "shortlist.json"
+SEARCHES = DATA / "searches.json"
+DEFAULT_SEARCHES = [{
+    "name": "Cable USB4 confiable",
+    "q": "cable usb4 40gbps usb c a usb c",
+    "budget": "",
+    "must": "40Gbps|USB4|Thunderbolt",
+    "nice": "E-Marker, trenzado|nylon, 240W|100W",
+    "exclude": "USB 2.0, 480Mbps, USB-A|USB A a, Micro, llavero, magnético|magnetico, adaptador, 4 puertos",
+    "w_price": "2", "w_seller": "9", "w_product": "9", "w_nice": "4",
+    "group": True, "iva_included": False, "type_only": True,
+}]
 PORT = int(os.environ.get("PORT") or 8000)
 
 
@@ -192,6 +203,8 @@ class Handler(SimpleHTTPRequestHandler):
             return self.send_json({"products": apply_enrichment(products)})
         if url.path == "/api/shortlist":
             return self.send_json(read_json(SHORTLIST, []))
+        if url.path == "/api/searches":
+            return self.send_json(read_json(SEARCHES, DEFAULT_SEARCHES))
         return super().do_GET()
 
     def do_POST(self):
@@ -209,11 +222,12 @@ class Handler(SimpleHTTPRequestHandler):
             merged.update(fresh)
             path.write_text(json.dumps(merged, ensure_ascii=False, indent=2), encoding="utf-8")
             return self.send_json(fresh)
-        if url.path != "/api/shortlist":
+        targets = {"/api/shortlist": SHORTLIST, "/api/searches": SEARCHES}
+        if url.path not in targets:
             return self.send_json({"error": "not found"}, 404)
         length = int(self.headers.get("Content-Length", 0))
         items = json.loads(self.rfile.read(length) or b"[]")
-        SHORTLIST.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
+        targets[url.path].write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
         return self.send_json({"ok": True})
 
 
