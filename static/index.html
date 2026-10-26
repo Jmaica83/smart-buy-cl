@@ -55,13 +55,25 @@
 
   <main>
     <nav class="tabs">
-      <button data-tab="ranking" class="active">Ranking <span id="n-ranking"></span></button>
+      <button data-tab="assistant" class="active">Asistente</button>
+      <button data-tab="ranking">Ranking <span id="n-ranking"></span></button>
       <button data-tab="compare">Comparar <span id="n-compare"></span></button>
       <button data-tab="discarded">Descartados <span id="n-discarded"></span></button>
       <button data-tab="shortlist">Lista corta <span id="n-shortlist"></span></button>
     </nav>
     <div id="status" class="muted"></div>
-    <section id="tab-ranking" class="tab active"></section>
+    <section id="tab-assistant" class="tab active">
+      <div class="chat">
+        <div id="chat-log" class="chat-log"></div>
+        <div id="chat-options" class="chat-options"></div>
+        <form id="chat-form" class="chat-form">
+          <input id="chat-input" placeholder="Escribe lo que quieres comprar…" autocomplete="off">
+          <button type="submit" class="btn send">Enviar</button>
+          <button type="button" id="chat-reset" class="btn">Nueva</button>
+        </form>
+      </div>
+    </section>
+    <section id="tab-ranking" class="tab"></section>
     <section id="tab-compare" class="tab"></section>
     <section id="tab-discarded" class="tab"></section>
     <section id="tab-shortlist" class="tab"></section>

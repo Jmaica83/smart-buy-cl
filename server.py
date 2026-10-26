@@ -17,6 +17,7 @@ from urllib.parse import parse_qs, urlparse
 
 import aliexpress_api
 import autorizar
+import chat
 import reviews
 
 ROOT = Path(__file__).resolve().parent
@@ -209,6 +210,13 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         url = urlparse(self.path)
+        if url.path == "/api/chat":
+            length = int(self.headers.get("Content-Length", 0))
+            history = json.loads(self.rfile.read(length) or b"[]")
+            try:
+                return self.send_json(chat.ask(history, ENV.get("CHAT_MODEL") or None))
+            except chat.ChatError as exc:
+                return self.send_json({"error": str(exc)}, 502)
         if url.path == "/api/reviews":
             product_id = parse_qs(url.query).get("id", [""])[0]
             if not product_id.isdigit():

@@ -31,13 +31,19 @@ const PRODUCT_TYPES = new Set(("cable adaptador cargador hub concentrador carcas
   "dock estacion switch camara reloj smartwatch zapatilla zapato polera camiseta chaqueta pantalon mochila bolso " +
   "taladro destornillador atornillador sierra bombilla ampolleta foco enchufe regleta router antena microfono " +
   "parlante altavoz protector mica vidrio llavero organizador").split(" "));
-const TYPE_ARTICLE = { cable: "un", adaptador: "un", cargador: "un", hub: "un", concentrador: "un", convertidor: "un", conector: "un" };
+// Sinónimos: se comparan por su forma canónica (auricular = audifono, etc.).
+const TYPE_SYNONYMS = { auricular: "audifono", altavoz: "parlante", raton: "mouse", ampolleta: "bombilla", foco: "bombilla",
+  concentrador: "hub", atornillador: "destornillador", camiseta: "polera", zapato: "zapatilla", smartwatch: "reloj" };
+const FEMININE = new Set("carcasa caja funda lampara bateria memoria tarjeta estacion camara zapatilla polera chaqueta mochila sierra bombilla regleta antena mica".split(" "));
+const withArticle = t => `${FEMININE.has(t) ? "una" : "un"} ${t}`;
 
 function singular(w) {
-  if (PRODUCT_TYPES.has(w)) return w;
-  if (w.endsWith("es") && PRODUCT_TYPES.has(w.slice(0, -2))) return w.slice(0, -2);
-  if (w.endsWith("s") && PRODUCT_TYPES.has(w.slice(0, -1))) return w.slice(0, -1);
-  return w;
+  let s = w;
+  if (!PRODUCT_TYPES.has(s)) {
+    if (s.endsWith("es") && PRODUCT_TYPES.has(s.slice(0, -2))) s = s.slice(0, -2);
+    else if (s.endsWith("s") && PRODUCT_TYPES.has(s.slice(0, -1))) s = s.slice(0, -1);
+  }
+  return PRODUCT_TYPES.has(s) ? (TYPE_SYNONYMS[s] || s) : w;
 }
 function productType(text) {
   const words = String(text).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").split(/[^a-z0-9]+/);
@@ -119,7 +125,7 @@ function evaluate(products, f) {
     const banned = exclude.filter(alts => matches(hay, alts)).map(a => a.join(" o "));
     const reasons = [];
     const type = wantedType && productType(p.title);
-    if (type && type !== wantedType) reasons.push(`Parece ${TYPE_ARTICLE[type] || "un(a)"} ${type}, no ${TYPE_ARTICLE[wantedType] || "un(a)"} ${wantedType}`);
+    if (type && type !== wantedType) reasons.push(`Parece ${withArticle(type)}, no ${withArticle(wantedType)}`);
     if (missing.length) reasons.push("No cumple: " + missing.join(", "));
     if (banned.length) reasons.push("Tiene algo descartado: " + banned.join(", "));
     if (cost.total > budget) reasons.push(`Sobre presupuesto (${clp(cost.total)})`);
@@ -459,6 +465,77 @@ $("#del-search").addEventListener("click", async () => {
   renderSaved();
 });
 
+// ---------- asistente ----------
+const GREETING = { role: "assistant", text: "¡Hola! ¿Qué quieres comprar? Cuéntamelo como quieras y te voy preguntando lo necesario para encontrar la mejor opción.",
+  options: ["Un cable", "Audífonos", "Una herramienta", "Ropa o zapatillas"] };
+let chatHistory = [GREETING];
+let chatBusy = false;
+
+function mdLite(text) {
+  return esc(text).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+}
+function renderChat(extra = "") {
+  $("#chat-log").innerHTML = chatHistory.map(m => `<div class="msg ${m.role}${m.error ? " error" : ""}">${mdLite(m.text)}</div>`).join("") + extra;
+  const last = chatHistory[chatHistory.length - 1];
+  $("#chat-options").innerHTML = !chatBusy && last.role === "assistant" && last.options?.length
+    ? last.options.map(o => `<button type="button" data-option="${esc(o)}">${esc(o)}</button>`).join("") : "";
+  $("#chat-log").scrollTop = $("#chat-log").scrollHeight;
+}
+async function sendChat(text) {
+  text = text.trim();
+  if (!text || chatBusy) return;
+  chatHistory.push({ role: "user", text });
+  chatBusy = true;
+  renderChat(`<div class="msg assistant thinking">Pensando…</div>`);
+  try {
+    const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(chatHistory.filter(m => !m.error).map(m => ({ role: m.role, text: m.text }))) });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    chatHistory.push({ role: "assistant", text: data.reply, options: data.options });
+    if (data.done) await runAssistantSearch(data.search);
+  } catch (e) {
+    chatHistory.push({ role: "assistant", text: "No pude responder: " + e.message, error: true });
+  } finally {
+    chatBusy = false;
+    renderChat();
+  }
+}
+async function runAssistantSearch(s) {
+  const entry = { ...s, group: true, iva_included: false, type_only: true };
+  for (const k of ["w_price", "w_seller", "w_product", "w_nice"]) entry[k] = String(entry[k]);
+  applySearch(entry);
+  const i = searches.findIndex(x => x.name === entry.name);
+  if (i >= 0) searches[i] = entry; else searches.push(entry);
+  await saveSearches();
+  renderSaved(entry.name);
+  compareIds = new Set();
+  await search();
+  const top = ranked[0];
+  chatHistory.push({ role: "assistant", options: ["Ver el ranking", "Buscar otra cosa"],
+    text: top ? `Encontré ${ranked.length} opciones que cumplen (y descarté ${discarded.length}). La mejor según tus prioridades: **${top.p.title.slice(0, 80)}…** por ${clp(top.cost.total)} puesto en Chile. La búsqueda quedó guardada como "${entry.name}".`
+              : `No encontré productos que cumplan todo (descarté ${discarded.length}). Motivos más comunes: ${topReasons()}. Dime qué relajar y vuelvo a buscar.` });
+}
+function topReasons() {
+  const count = {};
+  discarded.forEach(d => d.reasons.forEach(r => { const k = r.split(":")[0].replace(/\(.*\)/, "").trim(); count[k] = (count[k] || 0) + 1; }));
+  return Object.entries(count).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${k} (${n})`).join(", ") || "ninguno";
+}
+function showTab(name) {
+  document.querySelectorAll(".tabs button, .tab").forEach(x => x.classList.remove("active"));
+  document.querySelector(`.tabs button[data-tab="${name}"]`).classList.add("active");
+  $("#tab-" + name).classList.add("active");
+}
+$("#chat-form").addEventListener("submit", e => { e.preventDefault(); const t = $("#chat-input").value; $("#chat-input").value = ""; sendChat(t); });
+$("#chat-options").addEventListener("click", e => {
+  const o = e.target.closest("button")?.dataset.option;
+  if (!o) return;
+  if (o === "Ver el ranking") return showTab("ranking");
+  if (o === "Buscar otra cosa") { chatHistory = [GREETING]; return renderChat(); }
+  sendChat(o);
+});
+$("#chat-reset").addEventListener("click", () => { chatHistory = [GREETING]; renderChat(); $("#chat-input").focus(); });
+
 (async function init() {
   CONFIG = await (await fetch("/api/config")).json();
   $("#mode").textContent = CONFIG.mode === "api" ? "API real" : "Datos de prueba";
@@ -468,5 +545,6 @@ $("#del-search").addEventListener("click", async () => {
   renderShortlist();
   searches = await (await fetch("/api/searches")).json();
   renderSaved();
+  renderChat();
   search();
 })();

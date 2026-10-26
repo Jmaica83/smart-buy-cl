@@ -6,3 +6,4 @@ data/shortlist.json
 .claude/
 data/cache/
 data/searches.json
+data/chat/
