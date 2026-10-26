@@ -8,12 +8,15 @@ Sin credenciales en .env funciona en modo prueba con data/mock_products.json.
 import json
 import os
 import re
+import time
 import webbrowser
+from concurrent.futures import ThreadPoolExecutor
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 import aliexpress_api
+import autorizar
 import reviews
 
 ROOT = Path(__file__).resolve().parent
@@ -39,8 +42,10 @@ def load_env():
 ENV = load_env()
 APP_KEY = ENV.get("ALIEXPRESS_APP_KEY", "")
 APP_SECRET = ENV.get("ALIEXPRESS_APP_SECRET", "")
-TRACKING_ID = ENV.get("ALIEXPRESS_TRACKING_ID", "")
-MODE = "api" if APP_KEY and APP_SECRET else "mock"
+MODE = "api" if APP_KEY and APP_SECRET and ENV.get("ALIEXPRESS_ACCESS_TOKEN") else "mock"
+CACHE = DATA / "cache"
+CACHE_HOURS = 12
+DETAIL_COUNT = 50
 CONFIG = {
     "mode": MODE,
     "usd_clp": float(ENV.get("USD_CLP") or 950),
@@ -63,6 +68,74 @@ def mock_search(query):
     hits = [p for p in products
             if any(t in (p["title"] + " " + " ".join(p["specs"].values())).lower() for t in terms)]
     return hits or products
+
+
+def access_token():
+    """Devuelve el token vigente; lo renueva si vence en menos de una hora."""
+    env = load_env()
+    token = env.get("ALIEXPRESS_ACCESS_TOKEN", "")
+    expires = int(env.get("ALIEXPRESS_TOKEN_EXPIRES") or 0)
+    if expires and expires - time.time() * 1000 < 3600000 and env.get("ALIEXPRESS_REFRESH_TOKEN"):
+        data = aliexpress_api.refresh_token(APP_KEY, APP_SECRET, env["ALIEXPRESS_REFRESH_TOKEN"])
+        autorizar.save_token(data)
+        token = data["access_token"]
+    return token
+
+
+def cached_detail(product_id, session):
+    path = CACHE / f"{product_id}.json"
+    cached = read_json(path, None)
+    fresh = cached and time.time() - cached.get("_at", 0) < CACHE_HOURS * 3600
+    if fresh and cached.get("shipping_usd") is not None:
+        return cached
+    if fresh:
+        detail = cached  # Solo falta el envío (suele ser por límite de consultas): se reintenta.
+    else:
+        detail = {"_at": time.time()}
+        try:
+            detail.update(aliexpress_api.product_detail(APP_KEY, APP_SECRET, session, product_id))
+        except Exception as exc:
+            detail["_error"] = str(exc)
+    for attempt in range(3):
+        try:
+            ship = aliexpress_api.freight(APP_KEY, APP_SECRET, session, product_id, detail.get("sku_id"))
+        except Exception as exc:
+            detail["_freight_error"] = str(exc)
+            break
+        if ship:
+            detail.update(ship)
+            detail.pop("_freight_error", None)
+            break
+        time.sleep(1.5 * (attempt + 1))
+    path.write_text(json.dumps(detail, ensure_ascii=False, indent=2), encoding="utf-8")
+    return detail
+
+
+def merge_detail(p, d):
+    for key in ("title", "image", "rating_pct", "sold"):
+        if p.get(key) in (None, "", 0) and d.get(key) not in (None, ""):
+            p[key] = d[key]
+    # El precio de la variante más barata (la misma que cotiza el envío) es más fiel
+    # que el de la búsqueda, que a veces muestra precios promocionales.
+    for key in ("price_usd", "shipping_usd", "ship_days", "carrier"):
+        if d.get(key) is not None:
+            p[key] = d[key]
+    if d.get("specs"):
+        p["specs"] = d["specs"]
+    for key, value in (d.get("store") or {}).items():
+        if value not in (None, ""):
+            p["store"][key] = value
+
+
+def api_search(query):
+    session = access_token()
+    products = aliexpress_api.search(APP_KEY, APP_SECRET, session, query)
+    top = products[:DETAIL_COUNT]
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        details = list(pool.map(lambda p: cached_detail(p["id"], session), top))
+    for p, d in zip(top, details):
+        merge_detail(p, d)
+    return products
 
 
 def apply_enrichment(products):
@@ -107,7 +180,7 @@ class Handler(SimpleHTTPRequestHandler):
             query = parse_qs(url.query).get("q", [""])[0].strip()
             try:
                 if MODE == "api":
-                    products = aliexpress_api.search(APP_KEY, APP_SECRET, TRACKING_ID, query)
+                    products = api_search(query)
                 else:
                     products = mock_search(query)
             except Exception as exc:
@@ -142,6 +215,7 @@ class Handler(SimpleHTTPRequestHandler):
 
 def main():
     ENRICH.mkdir(parents=True, exist_ok=True)
+    CACHE.mkdir(parents=True, exist_ok=True)
     server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     url = f"http://localhost:{PORT}"
     print(f"Comparador en {url}  (modo: {'API real' if MODE == 'api' else 'datos de prueba'})")

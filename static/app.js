@@ -11,19 +11,23 @@ let compareIds = new Set();
 let shortlist = [];
 
 // ---------- requisitos ----------
+// Normaliza para comparar: "20 Gbps" = "20Gbps", "0,5 m" = "0.5m".
+const norm = s => String(s).toLowerCase().replace(/(\d),(\d)/g, "$1.$2").replace(/\s+/g, "");
 function parseTerms(text) {
-  return text.split(",").map(t => t.trim()).filter(Boolean)
-    .map(t => t.split("|").map(a => a.trim().toLowerCase()).filter(Boolean));
+  return text.split(/,(?!\d)/).map(t => t.trim()).filter(Boolean)
+    .map(t => t.split("|").map(norm).filter(Boolean));
 }
 function haystack(p) {
-  return (p.title + " " + Object.entries(p.specs || {}).map(([k, v]) => `${k}: ${v}`).join(" ")).toLowerCase();
+  return norm(p.title + " " + Object.entries(p.specs || {}).map(([k, v]) => `${k}: ${v}`).join(" "));
 }
 const matches = (hay, alts) => alts.some(a => hay.includes(a));
 
 // ---------- costo real en Chile ----------
+let shipEstimate = 0;
+
 function landedCost(p, ivaIncluded) {
   const price = p.price_usd ?? 0;
-  const ship = p.shipping_usd ?? 0;
+  const ship = p.shipping_usd ?? shipEstimate;
   const base = price + ship;
   let duty = 0, iva = 0;
   if (base > CONFIG.duty_threshold_usd) duty = base * CONFIG.duty;
@@ -37,6 +41,9 @@ function sellerScore(s) {
   const parts = [];
   if (s.positive_pct != null) parts.push(clamp((s.positive_pct - 90) / 9));
   if (s.years != null) parts.push(clamp(s.years / 5));
+  for (const r of [s.described_rating, s.shipping_rating, s.communication_rating]) {
+    if (r != null) parts.push(clamp((r - 4.5) / 0.4));
+  }
   let score = parts.length ? parts.reduce((a, b) => a + b) / parts.length : 0.5;
   if (s.official) score += 0.1;
   if (s.choice) score += 0.05;
@@ -73,6 +80,9 @@ function evaluate(products, f) {
   const must = parseTerms(f.must), nice = parseTerms(f.nice), exclude = parseTerms(f.exclude);
   const budget = Number(f.budget) || Infinity;
   const ok = [], out = [];
+
+  const knownShip = products.map(p => p.shipping_usd).filter(x => x != null).sort((a, b) => a - b);
+  shipEstimate = knownShip.length ? knownShip[Math.floor(knownShip.length / 2)] : 0;
 
   for (const p of products) {
     const hay = haystack(p);
@@ -123,10 +133,11 @@ function explain(r, minTotal) {
   else out.push(["con", `${clp(r.cost.total - minTotal)} más caro que el más barato`]);
   if (s.official) out.push(["pro", "Tienda oficial de la marca"]);
   if (s.positive_pct != null) out.push([s.positive_pct >= 95 ? "pro" : "con", `Tienda con ${s.positive_pct}% de feedback positivo`]);
+  if (s.described_rating != null) out.push([s.described_rating >= 4.7 ? "pro" : "con", `Tienda: ${s.described_rating}/5 en "como se describe", ${s.shipping_rating ?? "?"}/5 en envío`]);
   if (s.years != null && s.years < 2) out.push(["con", `Tienda nueva (${s.years} año${s.years === 1 ? "" : "s"})`]);
-  if (!r.sellerKnown) out.push(["con", "Sin datos de la tienda (la API no los entrega)"]);
+  if (!r.sellerKnown) out.push(["con", "Sin datos de la tienda"]);
   if (p.rating_pct != null) out.push([p.rating_pct >= 95 ? "pro" : "con", `${p.rating_pct}% de valoraciones positivas, ${p.sold.toLocaleString("es-CL")} vendidos`]);
-  if (!r.cost.shipKnown) out.push(["con", "Costo de envío desconocido (no incluido)"]);
+  if (!r.cost.shipKnown) out.push(["con", `Envío desconocido: se estimó ${clp(r.cost.ship)} (el típico de esta búsqueda)`]);
   else if (p.ship_days) out.push([p.ship_days <= 15 ? "pro" : "con", `Llega en ~${p.ship_days} días`]);
   if (r.niceTotal) out.push([r.niceHits.length === r.niceTotal ? "pro" : "con", `Deseables: ${r.niceHits.length} de ${r.niceTotal}`]);
   (p.reviews?.flags || []).forEach(f => out.push(["bad", "Reseñas: " + f]));
@@ -146,7 +157,7 @@ function card(r, i) {
   const p = r.p, c = r.cost;
   const inShort = shortlist.some(s => s.id === p.id);
   const chips = Object.entries(p.specs || {}).map(([k, v]) => {
-    const hit = r.niceHits.some(h => `${k}: ${v}`.toLowerCase().includes(h) || p.title.toLowerCase().includes(h) && String(v).toLowerCase().includes(h));
+    const hit = r.niceHits.some(h => norm(`${k}: ${v}`).includes(h));
     return `<span class="chip${hit ? " hit" : ""}">${esc(k)}: ${esc(v)}</span>`;
   }).join("");
   const rev = reviewBlock(p.reviews);
@@ -164,7 +175,7 @@ function card(r, i) {
     </div>
     <div class="side">
       <div class="total">${clp(c.total)}</div>
-      <div class="breakdown">Producto ${clp(c.price)} · Envío ${c.shipKnown ? clp(c.ship) : "?"}${c.duty ? ` · Arancel ${clp(c.duty)}` : ""}${c.iva ? ` · IVA ${clp(c.iva)}` : ""}</div>
+      <div class="breakdown">Producto ${clp(c.price)} · Envío ${c.shipKnown ? clp(c.ship) : "~" + clp(c.ship)}${c.duty ? ` · Arancel ${clp(c.duty)}` : ""}${c.iva ? ` · IVA ${clp(c.iva)}` : ""}</div>
       <div class="score"><b>${Math.round(r.score)}</b>/100<div class="bar"><div style="width:${r.score}%"></div></div></div>
       <div class="actions">
         <button data-compare="${esc(p.id)}" class="${compareIds.has(p.id) ? "on" : ""}">Comparar</button>
@@ -218,7 +229,7 @@ function renderCompare() {
     ${line("Puntaje", rows.map(r => v(Math.round(r.score), r.score)), hi)}
     ${line("Total en Chile", rows.map(r => v(clp(r.cost.total), r.cost.total)), lo)}
     ${line("Producto", rows.map(r => v(clp(r.cost.price))))}
-    ${line("Envío", rows.map(r => v(r.cost.shipKnown ? clp(r.cost.ship) : "?")))}
+    ${line("Envío", rows.map(r => v(r.cost.shipKnown ? clp(r.cost.ship) : "~" + clp(r.cost.ship))))}
     ${line("IVA", rows.map(r => v(clp(r.cost.iva))))}
     ${line("Días de envío", rows.map(r => v(r.p.ship_days, r.p.ship_days)), lo)}
     ${line("Valoración", rows.map(r => v(r.p.rating_pct != null ? r.p.rating_pct + "%" : null, r.p.rating_pct)), hi)}
