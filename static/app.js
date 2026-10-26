@@ -8,6 +8,7 @@ let lastProducts = [];
 let ranked = [];
 let discarded = [];
 let compareIds = new Set();
+const selectedSku = {};
 let shortlist = [];
 
 // ---------- requisitos ----------
@@ -86,7 +87,8 @@ function evaluate(products, f) {
 
   for (const p of products) {
     const hay = haystack(p);
-    const cost = landedCost(p, f.iva_included);
+    const pick = pickVariant(p, must, exclude);
+    const cost = landedCost(pick.variant ? { ...p, price_usd: pick.variant.price_usd } : p, f.iva_included);
     const missing = must.filter(alts => !matches(hay, alts)).map(a => a.join(" o "));
     const banned = exclude.filter(alts => matches(hay, alts)).map(a => a.join(" o "));
     const reasons = [];
@@ -95,7 +97,7 @@ function evaluate(products, f) {
     if (cost.total > budget) reasons.push(`Sobre presupuesto (${clp(cost.total)})`);
     if (reasons.length) { out.push({ p, cost, reasons }); continue; }
     const niceHits = nice.filter(alts => matches(hay, alts)).map(a => a[0]);
-    ok.push({ p, cost, niceHits, niceTotal: nice.length });
+    ok.push({ p, cost, niceHits, niceTotal: nice.length, ...pick });
   }
 
   const minTotal = Math.min(...ok.map(r => r.cost.total));
@@ -126,8 +128,32 @@ function evaluate(products, f) {
   return { ranked: list, discarded: out };
 }
 
+// Elige la variante: la que eligió el usuario o, si no, la más barata que cumple los requisitos.
+// AliExpress muestra el precio de la variante más barata, que muchas veces es otra cosa
+// (por ejemplo la versión de 10Gbps de un cable anunciado como de 40Gbps).
+function pickVariant(p, must, exclude) {
+  const variants = p.variants || [];
+  if (!variants.length) return { variant: null, cheapestSkipped: null };
+  const chosen = variants.find(v => v.sku_id === selectedSku[p.id]);
+  if (chosen) return { variant: chosen, cheapestSkipped: null, manual: true };
+  let candidates = variants.filter(v => v.stock !== 0);
+  if (!candidates.length) candidates = variants;
+  for (const alts of must) {
+    const ok = candidates.filter(v => matches(norm(v.label), alts));
+    if (ok.length && ok.length < candidates.length) candidates = ok;
+  }
+  for (const alts of exclude) {
+    const ok = candidates.filter(v => !matches(norm(v.label), alts));
+    if (ok.length) candidates = ok;
+  }
+  const variant = candidates.reduce((a, b) => (b.price_usd < a.price_usd ? b : a));
+  const cheapest = variants.reduce((a, b) => (b.price_usd < a.price_usd ? b : a));
+  return { variant, cheapestSkipped: cheapest.sku_id !== variant.sku_id ? cheapest : null };
+}
+
 function explain(r, minTotal) {
   const p = r.p, s = p.store, out = [];
+  if (r.cheapestSkipped) out.push(["con", `Ojo: el precio que muestra AliExpress (US$${r.cheapestSkipped.price_usd}) es de otra variante (${r.cheapestSkipped.label}). Aquí se usa la que cumple tus requisitos.`]);
   if (r.cost.total <= minTotal * 1.001) out.push(["pro", "El más barato puesto en Chile"]);
   else if (r.parts.price >= 0.8) out.push(["pro", `Solo ${clp(r.cost.total - minTotal)} más caro que el más barato`]);
   else out.push(["con", `${clp(r.cost.total - minTotal)} más caro que el más barato`]);
@@ -169,6 +195,7 @@ function card(r, i) {
     <div>
       <a class="title" href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.title)}</a>
       <div class="store">${esc(p.store.name || "Tienda sin nombre")}${p.store.official ? " · Oficial" : ""}${p.store.choice ? " · Choice" : ""}</div>
+      ${variantSelect(r)}
       <div class="chips">${chips}</div>
       <ul class="reasons">${r.reasons.map(([k, t]) => `<li class="${k}">${esc(t)}</li>`).join("")}</ul>
       ${rev}${clones}
@@ -197,6 +224,13 @@ function reviewBlock(r) {
   if (r.chile?.length) parts.push("<b>Desde Chile:</b> " + r.chile.map(t => `“${esc(t)}”`).join(" "));
   if (r.worst?.length) parts.push(`<details><summary>Peores reseñas (${r.worst.length})</summary>${r.worst.map(w => `<p>${"★".repeat(w.stars)} ${esc(w.text)} <span class="muted">${esc(w.variant)}</span></p>`).join("")}</details>`);
   return `<div class="review">${parts.join("<br>")}</div>`;
+}
+
+function variantSelect(r) {
+  const vs = r.p.variants || [];
+  if (vs.length < 2) return r.variant ? `<div class="variant">Variante: ${esc(r.variant.label)}</div>` : "";
+  const opts = vs.map(v => `<option value="${esc(v.sku_id)}"${v.sku_id === r.variant?.sku_id ? " selected" : ""}${v.stock === 0 ? " disabled" : ""}>${esc(v.label)} · US$${v.price_usd}${v.stock === 0 ? " (sin stock)" : ""}</option>`).join("");
+  return `<label class="variant">Variante: <select data-variant="${esc(r.p.id)}">${opts}</select>${r.manual ? "" : " <span class=\"muted\">(elegida automáticamente)</span>"}</label>`;
 }
 
 function renderRanking() {
@@ -234,6 +268,7 @@ function renderCompare() {
     ${line("Días de envío", rows.map(r => v(r.p.ship_days, r.p.ship_days)), lo)}
     ${line("Valoración", rows.map(r => v(r.p.rating_pct != null ? r.p.rating_pct + "%" : null, r.p.rating_pct)), hi)}
     ${line("Vendidos", rows.map(r => v(r.p.sold.toLocaleString("es-CL"), r.p.sold)), hi)}
+    ${line("Variante", rows.map(r => v(r.variant?.label)))}
     ${line("Tienda", rows.map(r => v(r.p.store.name)))}
     ${line("Feedback tienda", rows.map(r => v(r.p.store.positive_pct != null ? r.p.store.positive_pct + "%" : null, r.p.store.positive_pct)), hi)}
     ${line("Años tienda", rows.map(r => v(r.p.store.years, r.p.store.years)), hi)}
@@ -248,7 +283,7 @@ function renderShortlist() {
   $("#tab-shortlist").innerHTML = shortlist.length ? shortlist.map(s => `
     <div class="sl" data-id="${esc(s.id)}">
       <a class="title" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>
-      <div class="muted">${esc(s.store)} · ${clp(s.total_clp)} · puntaje ${Math.round(s.score)}</div>
+      <div class="muted">${esc(s.store)}${s.variant ? " · " + esc(s.variant) : ""} · ${clp(s.total_clp)} · puntaje ${Math.round(s.score)}</div>
       <div class="state ${s.status}">${s.status === "approved" ? "Aprobado: Claude lo agrega al carro, tú pagas" : "Pendiente"}</div>
       <textarea placeholder="Notas (color, variante, talla...)">${esc(s.note || "")}</textarea>
       <div class="actions" style="justify-content:flex-start">
@@ -313,7 +348,7 @@ document.addEventListener("click", async e => {
     if (idx >= 0) shortlist.splice(idx, 1);
     else {
       const r = ranked.flatMap(r => [r, ...(r.clones || [])]).find(r => r.p.id === id);
-      shortlist.push({ id, title: r.p.title, url: r.p.url, store: r.p.store.name, total_clp: r.cost.total, score: r.score, status: "pending", note: "" });
+      shortlist.push({ id, title: r.p.title, url: r.p.url, store: r.p.store.name, variant: r.variant?.label || "", sku_id: r.variant?.sku_id || "", total_clp: r.cost.total, score: r.score, status: "pending", note: "" });
     }
     await saveShortlist(); renderRanking(); renderShortlist();
   } else if (t.dataset.reviews) {
@@ -342,6 +377,11 @@ document.addEventListener("click", async e => {
 });
 
 document.addEventListener("change", async e => {
+  if (e.target.matches("select[data-variant]")) {
+    selectedSku[e.target.dataset.variant] = e.target.value;
+    recompute();
+    return;
+  }
   if (e.target.matches(".sl textarea")) {
     shortlist.find(s => s.id === e.target.closest(".sl").dataset.id).note = e.target.value;
     await saveShortlist();

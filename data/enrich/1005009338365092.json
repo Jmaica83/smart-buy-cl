@@ -1,0 +1,36 @@
+{
+  "rating_pct": 92.0,
+  "reviews": {
+    "source": "AliExpress (endpoint no oficial)",
+    "fetched": "2026-10-26",
+    "total": 25,
+    "read": 24,
+    "with_photos": 1,
+    "stars": 4.8,
+    "negative_pct": 0.0,
+    "labels": [
+      "Compatibilidad: 100% totalmente compatible",
+      "Calidad del material: 74% rápido",
+      "Servicio de garantía: 46% por encima de lo esperado"
+    ],
+    "flags": [],
+    "worst": [
+      {
+        "stars": 3,
+        "text": "El cable es muy rígido, pero funciona.",
+        "variant": "Longitud del Cable:0,5 metros",
+        "country": "NL"
+      },
+      {
+        "stars": 3,
+        "text": "El cable es muy rígido, pero funciona.",
+        "variant": "Longitud del Cable:0,8 m",
+        "country": "NL"
+      }
+    ],
+    "chile": [
+      "¡Envío rápido!"
+    ],
+    "summary": ""
+  }
+}

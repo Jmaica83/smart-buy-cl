@@ -213,8 +213,24 @@ def product_detail(app_key, app_secret, session, product_id):
             "choice": choice,
         },
         "specs": specs,
+        "variants": [_variant(price, s) for price, s in priced],
     }
     return detail
+
+
+def _variant(price, sku):
+    props = _find_list(sku.get("ae_sku_property_dtos") or {}, "ae_sku_property_d_t_o")
+    parts = []
+    for p in props:
+        value = p.get("property_value_definition_name") or p.get("sku_property_value") or ""
+        if value and "china" not in value.lower():  # "Envíos desde: China" no distingue variantes
+            parts.append(value.strip())
+    return {
+        "sku_id": str(sku.get("sku_id")),
+        "label": " / ".join(parts) or "Única",
+        "price_usd": price,
+        "stock": int(_num(sku.get("sku_available_stock")) or 0),
+    }
 
 
 def freight(app_key, app_secret, session, product_id, sku_id=None):

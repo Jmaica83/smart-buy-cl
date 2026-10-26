@@ -1,0 +1,31 @@
+{
+  "rating_pct": 96.6,
+  "reviews": {
+    "source": "AliExpress (endpoint no oficial)",
+    "fetched": "2026-10-26",
+    "total": 265,
+    "read": 60,
+    "with_photos": 14,
+    "stars": 4.9,
+    "negative_pct": 1.5,
+    "labels": [
+      "Fácil de usar: 90% bueno",
+      "Calidad del material: 82% rápido",
+      "Funcionalidad: 75% rápido"
+    ],
+    "flags": [],
+    "worst": [
+      {
+        "stars": 3,
+        "text": "3440x1440 máx. 60 Hz para MacBook m3pro",
+        "variant": "Color:Rojo Longitud:1,5 m Envíos desde:China Mainland",
+        "country": "UA"
+      }
+    ],
+    "chile": [
+      "me sorprendió! está muy bueno , funciona bien y está construido de manera muy sólida",
+      "Por alguna razón, mi monitor externo no funciona en un puerto Thunderbolt 4 con este cable."
+    ],
+    "summary": ""
+  }
+}

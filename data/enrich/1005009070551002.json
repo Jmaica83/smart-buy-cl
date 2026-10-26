@@ -1,0 +1,19 @@
+{
+  "rating_pct": 98.1,
+  "reviews": {
+    "source": "AliExpress (endpoint no oficial)",
+    "fetched": "2026-10-26",
+    "total": 617,
+    "read": 60,
+    "with_photos": 97,
+    "stars": 4.9,
+    "negative_pct": 0.8,
+    "labels": [],
+    "flags": [],
+    "worst": [],
+    "chile": [
+      "Este es el segundo que compro, es un cable bien hecho y compatible con carga rápida."
+    ],
+    "summary": ""
+  }
+}

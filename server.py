@@ -85,7 +85,7 @@ def access_token():
 def cached_detail(product_id, session):
     path = CACHE / f"{product_id}.json"
     cached = read_json(path, None)
-    fresh = cached and time.time() - cached.get("_at", 0) < CACHE_HOURS * 3600
+    fresh = cached and "variants" in cached and time.time() - cached.get("_at", 0) < CACHE_HOURS * 3600
     if fresh and cached.get("shipping_usd") is not None:
         return cached
     if fresh:
@@ -120,6 +120,10 @@ def merge_detail(p, d):
     for key in ("price_usd", "shipping_usd", "ship_days", "carrier"):
         if d.get(key) is not None:
             p[key] = d[key]
+    if d.get("variants"):
+        p["variants"] = d["variants"]
+    if d.get("free_shipping_threshold"):
+        p["free_shipping_threshold"] = d["free_shipping_threshold"]
     if d.get("specs"):
         p["specs"] = d["specs"]
     for key, value in (d.get("store") or {}).items():
