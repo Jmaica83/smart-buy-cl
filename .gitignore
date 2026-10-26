@@ -7,3 +7,5 @@ data/shortlist.json
 data/cache/
 data/searches.json
 data/chat/
+design/verificacion/
+design/loop/verificacion-*/

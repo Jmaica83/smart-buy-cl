@@ -1,0 +1,32 @@
+PASA     1  Todo font-weight es 300, 400 o 500                            todos permitidos
+PASA     2  Solo Inter, Geist Mono y la pila de sistema                   familias: geist mono, inter
+PASA     3  Ningún blanco puro de fondo                                   ninguno
+PASA     4  No queda el naranja anterior                                  ninguno
+PASA     4  Botones, pestañas y enlaces sin color saturado                1280px:  | 390px: 
+PASA     5  Todo button es píldora                                        1280px: 14/14 cumplen | 390px: 14/14 cumplen
+PASA     6  Tarjetas con radio >= 16 px y sin sombra                      1280px: 21 tarjetas, 0 malas | 390px: 21 tarjetas, 0 malas
+PASA     7  Inputs del formulario radio 4 px y borde                      1280px: 3/3 cumplen | 390px: 3/3 cumplen
+PASA     7  Cuadro del asistente radio 20 y texto 16 px                   1280px: 1/1 cumplen | 390px: 1/1 cumplen
+PASA     7  Contenedor del cuadro del asistente radio 20                  1280px: 1/1 cumplen | 390px: 1/1 cumplen
+PASA     8  Cada pestaña abre con h2.panel-title Inter 300 32 px          1280px: 5 pestañas, sin titular correcto:  | 390px: 5 pestañas, sin titular correcto: 
+PASA     9  Fondo del body                                                1280px: 1/1 cumplen | 390px: 1/1 cumplen
+PASA     9  Tarjetas de producto taupe                                    1280px: rgb(245, 243, 241) | 390px: rgb(245, 243, 241)
+PASA    10  Ninguna sombra > 4 px de difuminado                           todo dentro de [-inf, 4]
+PASA    11  Pestaña activa píldora ink con texto canvas; las demás sin f  1280px: rgb(0, 0, 0) / rgb(253, 252, 252) / otras con fondo: 0 | 390px: rgb(0, 0, 0) / rgb(253, 252, 252) / otras con fondo: 0
+PASA    12  Como máximo un botón relleno ink visible en el área principa  1280px: ok | 390px: ok
+PASA    13  Precios y puntajes en Geist Mono                              1280px: 22 cifras, 0 sin mono | 390px: 22 cifras, 0 sin mono
+PASA    14  En modo oscuro el canvas es                                   1280px: regla de modo oscuro | 390px: regla de modo oscuro
+PASA    15  Colores semánticos solo como puntos de 6 px                   1280px:  | 390px: 
+PASA    16  A 390 px no hay scroll horizontal                             390px: scrollWidth 390 / ancho 390
+PASA    16  A 390 px el panel de filtros queda bajo el área principal     390px: panel 758 / main 56
+PASA    17  El cuadro del asistente mide >= 72 px de alto y ocupa el anc  1280px: 724×104 en 820 | 390px: 318×104 en 358
+PASA   a11y-contraste  Contraste AA de todo el texto                                 1280px: 47 textos medidos, peor 5.20:1 | 390px: 46 textos medidos, peor 5.20:1
+PASA   a11y-axe  axe sin problemas serios ni críticos                          1280px: 0 reglas de impacto ≥ serious (1 en total) | 390px: 0 reglas de impacto ≥ serious (1 en total)
+PASA   a11y-tactil  Táctil de 44 px en el teléfono                                390px: 29/29 miden ≥ 44px
+PASA   a11y-foco  Foco visible al tabular                                       1280px: 24/24 con foco visible
+
+Tests del DNA: 17 pasan, 0 fallan, 0 con error, 0 a juicio del crítico.
+Chequeos propios: 4 pasan, 0 fallan, 0 con error.
+Puerta de accesibilidad: PASA (4/4 chequeos)
+Avisos: hoja no legible (otro origen): https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400&family=Inter:wght@300;400;500&display=swap
+Resultado en C:\Users\dario\OneDrive\Escritorio\Aliexpress\design\loop\verificacion-final\resultado.json (80.4 s)
