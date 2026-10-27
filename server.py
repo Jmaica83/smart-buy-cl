@@ -58,7 +58,10 @@ MODE = "api" if APP_KEY and APP_SECRET and ENV.get("ALIEXPRESS_ACCESS_TOKEN") el
 CACHE = DATA / "cache"
 CACHE_HOURS = 12
 DETAIL_COUNT = 50
+# Huella del código al arrancar: el lanzador la compara para saber si el servidor quedó viejo.
+CODE_STAMP = max(f.stat().st_mtime for f in ROOT.glob("*.py"))
 CONFIG = {
+    "code_stamp": CODE_STAMP,
     "mode": MODE,
     "usd_clp": float(ENV.get("USD_CLP") or 950),
     "iva": 0.19,
