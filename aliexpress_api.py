@@ -148,12 +148,17 @@ def _empty_product(product_id):
 # ---------- búsqueda ----------
 
 def search(app_key, app_secret, session, keywords, page=1):
-    data = call(
-        "aliexpress.ds.text.search", app_key, app_secret, session,
-        keyWord=keywords, local="es_ES", countryCode="CL", currency="USD",
-        pageSize=50, pageIndex=page,
-    )
-    items = _find_list(data, "selection_search_product", "products", "product")
+    # A veces la búsqueda responde vacía sin error justo después de muchas consultas; se reintenta.
+    for attempt in range(3):
+        data = call(
+            "aliexpress.ds.text.search", app_key, app_secret, session,
+            keyWord=keywords, local="es_ES", countryCode="CL", currency="USD",
+            pageSize=50, pageIndex=page,
+        )
+        items = _find_list(data, "selection_search_product", "products", "product")
+        if items:
+            break
+        time.sleep(1.5 * (attempt + 1))
     out = []
     for it in items:
         pid = _first(it, "itemId", "item_id", "product_id", "productId")

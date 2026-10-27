@@ -100,6 +100,9 @@ def cached_detail(product_id, session):
     fresh = cached and "variants" in cached and time.time() - cached.get("_at", 0) < CACHE_HOURS * 3600
     if fresh and cached.get("shipping_usd") is not None:
         return cached
+    # Sin envío: AliExpress a veces no lo cotiza; se reintenta como máximo una vez por hora.
+    if fresh and time.time() - cached.get("_freight_tried", 0) < 3600:
+        return cached
     if fresh:
         detail = cached  # Solo falta el envío (suele ser por límite de consultas): se reintenta.
     else:
@@ -119,6 +122,7 @@ def cached_detail(product_id, session):
             detail.pop("_freight_error", None)
             break
         time.sleep(1.5 * (attempt + 1))
+    detail["_freight_tried"] = time.time()
     path.write_text(json.dumps(detail, ensure_ascii=False, indent=2), encoding="utf-8")
     return detail
 

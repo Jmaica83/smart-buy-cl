@@ -2,7 +2,7 @@ dna: dna-smartbuy.md
 pieza: "http://localhost:8001/?buscar=Cable%20USB4%20confiable"   # necesita el servidor con PORT=8001
 anchos: [1280, 390]
 alto: 900
-espera_ms: 25000
+espera_ms: 45000
 
 tests:
   - id: 1

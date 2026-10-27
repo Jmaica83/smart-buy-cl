@@ -144,6 +144,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 #chat-input::placeholder { color: var(--smoke); }
 .composer-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .composer-bar .hint { margin-right: auto; font-size: 12px; color: var(--smoke); }
+.pill.mic { display: inline-flex; align-items: center; gap: 8px; }
+.pill.mic.on { background: var(--stone); border-color: var(--field); }
+.pill.mic.on span::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 9999px; background: var(--bad); margin-right: 8px; vertical-align: middle; animation: blink 1.2s ease-out infinite; }
 
 /* ---------- panel de ajustes ---------- */
 .panel summary {

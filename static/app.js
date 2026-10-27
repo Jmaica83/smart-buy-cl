@@ -738,6 +738,50 @@ $("#chat-options").addEventListener("click", async e => {
 });
 $("#chat-reset").addEventListener("click", resetChat);
 
+// ---------- dictado por voz ----------
+// Usa el reconocimiento de voz del navegador (Chrome y Edge). El texto queda en el cuadro
+// para revisarlo antes de enviar.
+const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognizer = null;
+let dictationBase = "";
+
+function setMic(on) {
+  const b = $("#chat-mic");
+  b.classList.toggle("on", on);
+  b.setAttribute("aria-pressed", on);
+  b.querySelector("span").textContent = on ? "Escuchando… toca para parar" : "Dictar";
+}
+function stopDictation() { if (recognizer) recognizer.stop(); }
+function startDictation() {
+  recognizer = new Recognition();
+  recognizer.lang = "es-CL";
+  recognizer.continuous = true;
+  recognizer.interimResults = true;
+  const input = $("#chat-input");
+  dictationBase = input.value.trim() ? input.value.trim() + " " : "";
+  recognizer.onresult = e => {
+    let text = "";
+    for (const r of e.results) text += r[0].transcript;
+    input.value = dictationBase + text.trimStart();
+    autoGrow();
+  };
+  recognizer.onerror = e => {
+    const msg = { "not-allowed": "El navegador no tiene permiso para usar el micrófono. Permítelo en el ícono del candado de la barra de direcciones.",
+      "no-speech": "No escuché nada. Prueba de nuevo, más cerca del micrófono.", "audio-capture": "No encontré un micrófono conectado.",
+      network: "El dictado necesita internet (el navegador procesa el audio en línea)." }[e.error];
+    if (msg) toast(msg);
+  };
+  recognizer.onend = () => { recognizer = null; setMic(false); input.focus(); };
+  recognizer.start();
+  setMic(true);
+}
+if (Recognition) {
+  $("#chat-mic").hidden = false;
+  $("#chat-mic").addEventListener("click", () => (recognizer ? stopDictation() : startDictation()));
+  // Al enviar se corta el dictado para no seguir escribiendo en un cuadro vacío.
+  $("#chat-form").addEventListener("submit", stopDictation, true);
+}
+
 // ---------- inicio ----------
 async function init() {
   try {
