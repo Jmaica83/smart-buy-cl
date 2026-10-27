@@ -22,6 +22,8 @@ Fecha de inicio: 2026-10-26. Las decisiones van fechadas y atribuidas: «(Darío
 | 2026-10-26 | Dos líneas en paralelo: revisión funcional por agentes y rediseño visual | Darío |
 | 2026-10-26 | El cuadro para escribir del asistente debe ser grande (era «enanito») | Darío |
 | 2026-10-26 | Modo herramienta interna: DNA del catálogo como vara, loop rápido | Claude |
+| 2026-10-26 | Aprobado el estado vacío del asistente en bloque taupe con titular de 48 px | Darío |
+| 2026-10-26 | El DNA entra al catálogo como `herramienta-calida`, estilo base de herramientas | Darío |
 
 ## Pendientes del dueño
 

@@ -52,7 +52,7 @@ Veredicto del crítico: «hereda paleta y tipografía, pero por la forma todaví
 
 ## Pendiente para Darío
 
-- ¿El estado vacío del asistente en bloque taupe le gusta, o prefiere el titular suelto sobre el fondo?
+- ~~Estado vacío del asistente en bloque taupe~~: aprobado por Darío (2026-10-26).
 - Nombre y logo definitivos (brief).
 
 ## Cambios al DNA o al brief
