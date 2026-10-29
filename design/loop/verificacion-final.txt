@@ -29,4 +29,4 @@ Tests del DNA: 17 pasan, 0 fallan, 0 con error, 0 a juicio del crítico.
 Chequeos propios: 4 pasan, 0 fallan, 0 con error.
 Puerta de accesibilidad: PASA (4/4 chequeos)
 Avisos: hoja no legible (otro origen): https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400&family=Inter:wght@300;400;500&display=swap
-Resultado en C:\Users\dario\OneDrive\Escritorio\Aliexpress\design\loop\verificacion-final\resultado.json (80.4 s)
+Resultado en D:\Proyectos\Aliexpress\design\loop\verificacion-final\resultado.json (80.4 s)
