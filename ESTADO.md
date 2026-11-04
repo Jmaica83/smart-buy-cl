@@ -4,9 +4,10 @@ Actualizado: 2026-11-03
 ## En curso
 - La búsqueda real funciona: Darío autorizó de nuevo el 2026-11-03.
 - Sin uso por varios días, la renovación automática deja de servir y hay que correr `py autorizar.py`.
-- La app corre con asistente conversacional, UI rediseñada, logo definitivo y acceso directo en el escritorio.
+- La app corre con asistente conversacional, estilo suizo-institucional, logo definitivo y acceso directo en el escritorio.
 
 ## Decidido hace poco
+- 2026-11-04: la UI pasa al estilo suizo-institucional (`design/dna-smartbuy.md` v2). El registro está en `design/loop/vuelta-suizo-1.md`.
 - 2026-11-03: logo Paquete estrella, en tinta, dibujado con JavaScript (`logo/propuestas/logos.js`; `node logo/generar.js` rehace los archivos).
 - 2026-11-03: el nombre definitivo es Smart Buy CL.
 - 2026-11-03: se arreglaron los 15 bugs de gravedad alta y media de la revisión.
@@ -18,7 +19,7 @@ Del 2026-10-26:
 - API Drop Shipping en modo solo lectura, en vez de la de afiliados (quedó «Unmet»).
 - Sin API pagada: el asistente usa Claude Code local (`claude -p`) con la cuota del plan.
 - Reseñas desde un endpoint público no oficial, sabiendo que puede romperse.
-- UI con el DNA `design/dna-smartbuy.md`; entró al catálogo como `herramienta-calida`.
+- La UI anterior entró al catálogo como `herramienta-calida`.
 
 ## Siguiente
 1. Comprobado el 2026-11-03 con la API real y la página de `1005011932940880`:

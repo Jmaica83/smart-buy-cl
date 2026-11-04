@@ -6,20 +6,20 @@ espera_ms: 45000
 
 tests:
   - id: 1
-    dice: Todo font-weight es 300, 400 o 500
+    dice: Todo font-weight es 400, 500 o 600
     tipo: css-valores
     propiedad: font-weight
-    permitidos: ["300", "400", "500", "normal", "inherit"]
+    permitidos: ["400", "500", "600", "normal", "inherit"]
 
   - id: 2
-    dice: Solo Inter, Geist Mono y la pila de sistema
+    dice: Solo IBM Plex Sans, IBM Plex Mono y la pila de sistema
     tipo: css-familias
-    permitidas: [Inter, "Geist Mono", system-ui, "-apple-system", "Segoe UI", sans-serif, monospace, ui-monospace, inherit]
+    permitidas: ["IBM Plex Sans", "IBM Plex Mono", system-ui, "-apple-system", "Segoe UI", sans-serif, monospace, ui-monospace, inherit]
 
   - id: 3
-    dice: Ningún blanco puro de fondo
+    dice: No queda el papel cálido anterior
     tipo: css-colores
-    prohibidos: ["#ffffff"]
+    prohibidos: ["#fdfcfc", "#f5f3f1", "#ebe8e4"]
 
   - id: 4
     dice: No queda el naranja anterior
@@ -37,76 +37,76 @@ tests:
       })()
 
   - id: 5
-    dice: Todo button es píldora
+    dice: Ningún button tiene radio mayor a 4 px
     tipo: estilo
     selector: button
-    propiedades: {border-top-left-radius: {min: 999}}
+    propiedades: {border-top-left-radius: {max: 4}}
     cuantos: todos
 
   - id: 6
-    dice: Tarjetas con radio >= 16 px y sin sombra
+    dice: Filas y bandas con radio <= 4 px y sin sombra
     tipo: js
     expr: |
       return (() => {
         const els = [...document.querySelectorAll('.card, .sl, .discard, .table-wrap, .chat-composer')];
-        const bad = els.filter(e => parseFloat(getComputedStyle(e).borderTopLeftRadius) < 16 || getComputedStyle(e).boxShadow !== 'none');
-        return { ok: els.length > 0 && bad.length === 0, detalle: `${els.length} tarjetas, ${bad.length} malas` };
+        const bad = els.filter(e => parseFloat(getComputedStyle(e).borderTopLeftRadius) > 4 || getComputedStyle(e).boxShadow !== 'none');
+        return { ok: els.length > 0 && bad.length === 0, detalle: `${els.length} filas, ${bad.length} malas` };
       })()
 
   - id: 7
-    dice: Inputs del formulario radio 4 px y borde #8a847c
+    dice: Inputs del formulario radio 2 px y borde #666b74
     tipo: estilo
     selector: "#form input:not([type=checkbox]):not([type=range]), #form select, .variant select"
-    propiedades: {border-top-left-radius: "4px", border-top-color: "#8a847c"}
+    propiedades: {border-top-left-radius: "2px", border-top-color: "#666b74"}
     cuantos: todos
   - id: 7
-    dice: Cuadro del asistente radio 20 y texto 16 px
+    dice: Cuadro del asistente con texto de 16 px
     tipo: estilo
     selector: "#chat-input"
     propiedades: {font-size: "16px"}
   - id: 7
-    dice: Contenedor del cuadro del asistente radio 20
+    dice: Cuadro del asistente radio 2 px
     tipo: estilo
-    selector: ".chat-composer"
-    propiedades: {border-top-left-radius: "20px"}
+    selector: "#chat-input"
+    propiedades: {border-top-left-radius: "2px"}
 
   - id: 8
-    dice: Cada pestaña abre con h2.panel-title Inter 300 32 px
+    dice: Cada pestaña abre con h2.panel-title Plex 600 28 px
     tipo: js
     expr: |
       return (() => {
         const tabs = [...document.querySelectorAll('.tab')];
-        const bad = tabs.filter(t => { const h = t.querySelector('h2.panel-title'); if (!h) return true; const s = getComputedStyle(h); return s.fontWeight !== '300' || s.fontSize !== '32px' || !/Inter/.test(s.fontFamily); });
+        const bad = tabs.filter(t => { const h = t.querySelector('h2.panel-title'); if (!h) return true; const s = getComputedStyle(h); return s.fontWeight !== '600' || s.fontSize !== '28px' || !/IBM Plex Sans/.test(s.fontFamily); });
         return { ok: tabs.length >= 5 && bad.length === 0, detalle: `${tabs.length} pestañas, sin titular correcto: ${bad.map(t => t.id).join(', ')}` };
       })()
 
   - id: 9
-    dice: Fondo del body #fdfcfc
+    dice: Fondo del body blanco
     tipo: estilo
     selector: body
-    propiedades: {background-color: "#fdfcfc"}
+    propiedades: {background-color: "#ffffff"}
   - id: 9
-    dice: Tarjetas de producto taupe
+    dice: Filas de producto sin fondo y con línea superior
     tipo: js
     expr: |
       return (() => { document.querySelector('.tabs button[data-tab=ranking]')?.click();
         const c = document.querySelector('.card'); if (!c) return { ok: false, detalle: 'sin tarjetas' };
-        return { ok: getComputedStyle(c).backgroundColor === 'rgb(245, 243, 241)', detalle: getComputedStyle(c).backgroundColor }; })()
+        const s = getComputedStyle(c); return { ok: s.backgroundColor === 'rgba(0, 0, 0, 0)' && parseFloat(s.borderTopWidth) >= 1, detalle: s.backgroundColor + ' / ' + s.borderTopWidth }; })()
 
   - id: 10
-    dice: Ninguna sombra > 4 px de difuminado
+    dice: Ninguna sombra
     tipo: css-rango
     propiedad: box-shadow
-    max: 4
+    max: 1
 
   - id: 11
-    dice: Pestaña activa píldora ink con texto canvas; las demás sin fondo
+    dice: Pestaña activa con línea ink de 2 px; ninguna con fondo
     tipo: js
     expr: |
       return (async () => { await new Promise(r => setTimeout(r, 400)); const bs = [...document.querySelectorAll('.tabs button')];
         const a = bs.find(b => b.classList.contains('active')); const s = getComputedStyle(a);
-        const others = bs.filter(b => b !== a).filter(b => !['rgba(0, 0, 0, 0)', 'transparent'].includes(getComputedStyle(b).backgroundColor));
-        return { ok: s.backgroundColor === 'rgb(0, 0, 0)' && s.color === 'rgb(253, 252, 252)' && others.length === 0, detalle: s.backgroundColor + ' / ' + s.color + ' / otras con fondo: ' + others.length }; })()
+        const filled = bs.filter(b => !['rgba(0, 0, 0, 0)', 'transparent'].includes(getComputedStyle(b).backgroundColor));
+        return { ok: s.borderBottomWidth === '2px' && s.borderBottomColor === 'rgb(21, 23, 27)' && filled.length === 0, detalle: s.borderBottomWidth + ' / ' + s.borderBottomColor + ' / con fondo: ' + filled.length }; })()
 
   - id: 12
     dice: Como máximo un botón relleno ink visible en el área principal por pestaña
@@ -115,36 +115,36 @@ tests:
       return (() => { const res = [];
         for (const name of ['assistant','ranking','compare','discarded','shortlist']) {
           document.querySelector(`.tabs button[data-tab=${name}]`)?.click();
-          const n = [...document.querySelectorAll(`#tab-${name} button`)].filter(b => b.offsetParent && getComputedStyle(b).backgroundColor === 'rgb(0, 0, 0)').length;
+          const n = [...document.querySelectorAll(`#tab-${name} button`)].filter(b => b.offsetParent && getComputedStyle(b).backgroundColor === 'rgb(21, 23, 27)').length;
           if (n > 1 && name !== 'ranking' && name !== 'shortlist') res.push(`${name}: ${n}`); }
         document.querySelector('.tabs button[data-tab=assistant]')?.click();
         return { ok: res.length === 0, detalle: res.join(', ') || 'ok' }; })()
     nota: En Ranking y Lista corta cada tarjeta puede tener su acción; se revisa a juicio que no compitan.
 
   - id: 13
-    dice: Precios y puntajes en Geist Mono
+    dice: Precios y puntajes en IBM Plex Mono
     tipo: js
     expr: |
       return (() => { document.querySelector('.tabs button[data-tab=ranking]')?.click();
         const els = [...document.querySelectorAll('.total, .score-num')];
-        const bad = els.filter(e => !/Geist Mono/.test(getComputedStyle(e).fontFamily));
+        const bad = els.filter(e => !/IBM Plex Mono/.test(getComputedStyle(e).fontFamily));
         document.querySelector('.tabs button[data-tab=assistant]')?.click();
         return { ok: els.length > 0 && bad.length === 0, detalle: `${els.length} cifras, ${bad.length} sin mono` }; })()
 
   - id: 14
-    dice: En modo oscuro el canvas es #141311
+    dice: En modo oscuro el canvas es #0b0c0f
     tipo: js
     expr: |
       return (() => { const css = [...document.styleSheets].flatMap(s => { try { return [...s.cssRules]; } catch { return []; } }).map(r => r.cssText).join(' ');
-        return { ok: /prefers-color-scheme:\s*dark[\s\S]*--canvas:\s*#141311/i.test(css), detalle: 'regla de modo oscuro' }; })()
+        return { ok: /prefers-color-scheme:\s*dark[\s\S]*--canvas:\s*#0b0c0f/i.test(css), detalle: 'regla de modo oscuro' }; })()
 
   - id: 15
-    dice: Colores semánticos solo como puntos de 6 px
+    dice: El acento solo en puntos de 6 px y en el número del primer lugar
     tipo: js
     expr: |
       return (() => { document.querySelector('.tabs button[data-tab=ranking]')?.click();
-        const sem = ['rgb(61, 122, 87)', 'rgb(154, 106, 31)', 'rgb(179, 38, 30)'];
-        const bad = [...document.querySelectorAll('body *')].filter(e => e.offsetParent).filter(e => { const s = getComputedStyle(e);
+        const sem = ['rgb(189, 69, 11)'];
+        const bad = [...document.querySelectorAll('body *')].filter(e => e.offsetParent && !e.matches('.card.top .rank')).filter(e => { const s = getComputedStyle(e);
           return sem.includes(s.color) || (sem.includes(s.backgroundColor) && (parseFloat(s.width) > 8 || parseFloat(s.height) > 8)); });
         document.querySelector('.tabs button[data-tab=assistant]')?.click();
         return { ok: bad.length === 0, detalle: bad.slice(0,4).map(e => e.className || e.tagName).join(', ') }; })()

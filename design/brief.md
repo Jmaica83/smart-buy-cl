@@ -7,7 +7,7 @@ Fecha de inicio: 2026-10-26. Las decisiones van fechadas y atribuidas: «(Darío
 - **Para quién:** Darío, en su PC, cuando quiere comprar algo sin marearse con la tienda de AliExpress.
 - **Qué tiene que lograr:** que en menos de 2 minutos pase de «quiero X» a un producto elegido con confianza, sabiendo cuánto cuesta puesto en Chile y por qué ese y no otro.
 - **Tono:** calmo, preciso, confiable. NO es una tienda: nada de urgencia, ofertas gritadas ni colores de promoción. Español de Chile, tú, sin voseo, sin slop de IA.
-- **Estilo:** DNA en `dna-smartbuy.md`, adaptado de `design/estilos/elevenlabs-calido/` (Darío, 2026-10-26).
+- **Estilo:** DNA en `dna-smartbuy.md`, adaptado de `design/estilos/suizo-institucional/` (Darío, 2026-11-04).
 - **Zonas:** no aplica.
 - **Fuentes de verdad del contenido:** la API de AliExpress (Drop Shipping, solo lectura) y el endpoint de reseñas, vía `server.py`. Los datos de prueba (`data/mock_products.json`) se rotulan «Datos de prueba» en la barra.
 - **Dónde lo revisa Darío:** capturas en el chat (PNG con SendUserFile) después de la vuelta 1 y al cierre.
@@ -26,6 +26,7 @@ Fecha de inicio: 2026-10-26. Las decisiones van fechadas y atribuidas: «(Darío
 | 2026-10-26 | El DNA entra al catálogo como `herramienta-calida`, estilo base de herramientas | Darío |
 | 2026-11-03 | Logo definitivo: Paquete estrella, en tinta, dibujado con JavaScript (`logo/propuestas/logos.js`) | Darío |
 | 2026-11-03 | El nombre definitivo es Smart Buy CL | Darío |
+| 2026-11-04 | Rediseño con el estilo suizo-institucional, elegido entre tres bocetos | Darío |
 
 ## Pendientes del dueño
 
