@@ -24,7 +24,9 @@ Fecha de inicio: 2026-10-26. Las decisiones van fechadas y atribuidas: «(Darío
 | 2026-10-26 | Modo herramienta interna: DNA del catálogo como vara, loop rápido | Claude |
 | 2026-10-26 | Aprobado el estado vacío del asistente en bloque taupe con titular de 48 px | Darío |
 | 2026-10-26 | El DNA entra al catálogo como `herramienta-calida`, estilo base de herramientas | Darío |
+| 2026-11-03 | Logo definitivo: Paquete estrella, en tinta, dibujado con JavaScript (`logo/propuestas/logos.js`) | Darío |
+| 2026-11-03 | El nombre definitivo es Smart Buy CL | Darío |
 
 ## Pendientes del dueño
 
-- Nombre y logo definitivos (hoy «Smart Buy CL» con el logo SB naranjo del acceso directo).
+Ninguno.

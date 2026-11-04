@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Propuestas de logo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap">
+<style>
+:root { --canvas: #fdfcfc; --taupe: #f5f3f1; --stone: #ebe8e4; --ink: #000000; --smoke: #6b655e;
+  --dark-canvas: #141311; --dark-ink: #f5f3f1; }
+* { box-sizing: border-box; margin: 0; }
+body { background: var(--canvas); color: var(--ink); font: 400 14px/1.5 Inter, system-ui, sans-serif; padding: 40px; width: 1280px; }
+h1 { font-weight: 300; font-size: 32px; line-height: 1.13; letter-spacing: -.02em; margin-bottom: 32px; }
+.row { display: grid; grid-template-columns: 220px 200px 200px 160px 1fr; gap: 24px; align-items: center;
+  padding: 24px 0; border-top: 1px solid var(--stone); }
+.row h2 { font-weight: 500; font-size: 15px; }
+.row p { color: var(--smoke); }
+.plain, .dark { width: 200px; height: 200px; border-radius: 20px; display: grid; place-items: center; }
+.plain { background: var(--taupe); }
+.dark { background: var(--dark-canvas); }
+.sizes { display: flex; align-items: end; gap: 16px; }
+.bar { display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 16px; border: 1px solid var(--stone); border-radius: 20px; }
+.brand { font-weight: 500; font-size: 15px; letter-spacing: -.01em; white-space: nowrap; }
+.brand span { color: var(--smoke); font-weight: 400; }
+</style>
+</head>
+<body>
+<h1>Propuestas de logo</h1>
+<main id="sheet"></main>
+<script src="logos.js"></script>
+<script>
+const only = new URLSearchParams(location.search).get("solo");
+const list = only ? LOGOS.filter(l => only.split(",").includes(l.id)) : LOGOS;
+document.getElementById("sheet").innerHTML = list.map(logo => `
+  <section class="row">
+    <div><h2>${logo.nombre}</h2><p>${logo.idea}</p></div>
+    <div class="plain">${logoSvg(logo, 136, "#000000", "#f5f3f1")}</div>
+    <div class="dark">${logoSvg(logo, 136, "#f5f3f1", "#141311")}</div>
+    <div class="sizes">
+      ${iconSvg(logo, 64, "#000000", "#fdfcfc")}
+      ${iconSvg(logo, 32, "#000000", "#fdfcfc")}
+      ${iconSvg(logo, 16, "#000000", "#fdfcfc")}
+    </div>
+    <div class="bar">${logoSvg(logo, 24, "#000000", "#fdfcfc")}<div class="brand">Smart Buy <span>CL</span></div></div>
+  </section>`).join("");
+</script>
+</body>
+</html>

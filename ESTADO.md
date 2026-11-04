@@ -2,25 +2,42 @@
 Actualizado: 2026-11-03
 
 ## En curso
-- Trabajo abierto: sin dato. El último avance real es del 2026-10-26.
-- Estado a esa fecha: la app corre con la API real (búsqueda, detalle y envío a Chile), asistente conversacional y UI rediseñada.
-- Vencimiento actual del token de la API: sin dato. Dura cerca de 1 día y se renueva solo.
+- La búsqueda real no funciona: el refresh token venció (el token venció cerca del 2026-10-27). Darío debe correr `py autorizar.py`.
+- Sin uso por varios días, la renovación automática deja de servir y hay que autorizar de nuevo.
+- La app corre con asistente conversacional, UI rediseñada, logo definitivo y acceso directo en el escritorio.
 
 ## Decidido hace poco
-Todo del 2026-10-26:
+- 2026-11-03: logo Paquete estrella, en tinta, dibujado con JavaScript (`logo/propuestas/logos.js`; `node logo/generar.js` rehace los archivos).
+- 2026-11-03: el nombre definitivo es Smart Buy CL.
+- 2026-11-03: se arreglaron los 15 bugs de gravedad alta y media de la revisión.
+
+Del 2026-10-26:
 - API Drop Shipping en modo solo lectura, en vez de la de afiliados (quedó «Unmet»).
 - Sin API pagada: el asistente usa Claude Code local (`claude -p`) con la cuota del plan.
 - Reseñas desde un endpoint público no oficial, sabiendo que puede romperse.
 - UI con el DNA `design/dna-smartbuy.md`; entró al catálogo como `herramienta-calida`.
-- Aprobado el estado vacío del asistente en bloque taupe.
 
 ## Siguiente
-- Nombre y logo definitivos (pendiente en `design/brief.md`).
-- Otros pasos: sin dato.
+1. Autorizar la cuenta y comprobar con la API real, porque puede cambiar el costo:
+   - Formato de `shipping_fee_format`: `_num` borra comas, así que «US $2,35» daría 235 (`aliexpress_api.py`). Quizás convenga priorizar `shipping_fee_cent`.
+   - Si el precio con `countryCode=CL` ya trae IVA, el total sale 19% alto. Comparar con un checkout real.
+   - Si `orders` viene como «1.000+», `sold` queda en 1.
+2. Revisar el tipo de cambio: es fijo (`USD_CLP`, 950 por defecto) y no avisa su antigüedad.
+3. Bugs menores sin arreglar:
+   - XSS en campos numéricos de reseñas sin `esc()` (`reviewBlock` en `static/app.js`).
+   - Comparar queda bloqueado por productos ocultos: limpiar `compareIds` en `recompute`.
+   - Una variante manual sobre presupuesto no se puede revertir desde Descartados.
+   - Cambiar `q` sin buscar y mover un filtro descarta todo.
+   - Tabla Comparar: marca «—» como mejor si todo es null y no tiene fila de arancel.
+   - Asistente: errores no capturados en `/api/chat` (prompt muy largo, JSON malo).
+   - Falsos descartes por tipo: «ssd externo» descarta «Disco SSD externo».
+   - Coincidencias que cruzan palabras: must «2m» acepta «2mm».
+   - `isdigit()` acepta «²» en `/api/reviews`.
+4. Dudas sin comprobar: dictado tras `stop()`, `javascript:` en la URL de la lista corta, estáticos sin `Cache-Control`.
 
 ## Dónde mirar
 - `CLAUDE.md`: cómo se ejecuta y reglas.
-- `design/brief.md`: decisiones y pendientes del diseño.
+- `design/brief.md`: decisiones del diseño.
 - `design/dna-smartbuy.md` y `design/tests.yaml`: vara visual.
 - `git log`: historia del código.
 - Ojo: `README.md` aún describe la API de afiliados.

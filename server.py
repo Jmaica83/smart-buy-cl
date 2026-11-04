@@ -91,7 +91,13 @@ def access_token():
     token = env.get("ALIEXPRESS_ACCESS_TOKEN", "")
     expires = int(env.get("ALIEXPRESS_TOKEN_EXPIRES") or 0)
     if expires and expires - time.time() * 1000 < 3600000 and env.get("ALIEXPRESS_REFRESH_TOKEN"):
-        data = aliexpress_api.refresh_token(APP_KEY, APP_SECRET, env["ALIEXPRESS_REFRESH_TOKEN"])
+        try:
+            data = aliexpress_api.refresh_token(APP_KEY, APP_SECRET, env["ALIEXPRESS_REFRESH_TOKEN"])
+        except Exception as exc:
+            # Si el token actual sigue vigente se usa ese; se reintenta en la próxima búsqueda.
+            if expires > time.time() * 1000:
+                return token
+            raise RuntimeError("La autorización de AliExpress venció. Corre py autorizar.py en la terminal.") from exc
         autorizar.save_token(data)
         token = data["access_token"]
     return token
@@ -180,6 +186,11 @@ def apply_enrichment(products):
     return products
 
 
+class Server(ThreadingHTTPServer):
+    # En Windows la reutilización deja a dos servidores escuchar en el mismo puerto.
+    allow_reuse_address = False
+
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(STATIC), **kwargs)
@@ -195,8 +206,18 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def local_request(self):
+        """Rechaza lo que venga de otro sitio abierto en el navegador."""
+        host = self.headers.get("Host", "")
+        origin = self.headers.get("Origin")
+        return (host.split(":")[0] in ("localhost", "127.0.0.1")
+                and origin in (None, f"http://{host}")
+                and self.headers.get("Sec-Fetch-Site") != "cross-site")
+
     def do_GET(self):
         url = urlparse(self.path)
+        if url.path.startswith("/api/") and not self.local_request():
+            return self.send_json({"error": "Solo se acepta desde la app local"}, 403)
         if url.path == "/api/config":
             return self.send_json(CONFIG)
         if url.path == "/api/search":
@@ -217,6 +238,8 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         url = urlparse(self.path)
+        if not self.local_request() or self.headers.get("Content-Type", "").split(";")[0] != "application/json":
+            return self.send_json({"error": "Solo se acepta desde la app local"}, 403)
         if url.path == "/api/chat":
             length = int(self.headers.get("Content-Length", 0))
             history = json.loads(self.rfile.read(length) or b"[]")
@@ -249,7 +272,7 @@ class Handler(SimpleHTTPRequestHandler):
 def main():
     ENRICH.mkdir(parents=True, exist_ok=True)
     CACHE.mkdir(parents=True, exist_ok=True)
-    server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+    server = Server(("127.0.0.1", PORT), Handler)
     url = f"http://localhost:{PORT}"
     print(f"Comparador en {url}  (modo: {'API real' if MODE == 'api' else 'datos de prueba'})")
     print("Ctrl+C para cerrar.")

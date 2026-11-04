@@ -36,7 +36,8 @@ a { color: inherit; text-underline-offset: 3px; }
   height: 56px; display: flex; align-items: center; gap: 16px; padding: 0 24px;
   border-bottom: 1px solid var(--stone); background: var(--canvas);
 }
-.brand { font-weight: 500; font-size: 15px; letter-spacing: -.01em; }
+.brand { display: flex; align-items: center; font-weight: 500; font-size: 15px; letter-spacing: -.01em; }
+.brand-mark { width: 24px; height: 24px; margin-right: 8px; }
 .brand span { color: var(--smoke); font-weight: 400; }
 .topbar-meta { margin-left: auto; font: 400 12px/1.5 var(--mono); color: var(--smoke); }
 

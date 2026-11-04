@@ -15,7 +15,8 @@ let shortlist = [];
 // Normaliza para comparar: "20 Gbps" = "20Gbps", "0,5 m" = "0.5m".
 const norm = s => String(s).toLowerCase().replace(/(\d),(\d)/g, "$1.$2").replace(/\s+/g, "");
 function parseTerms(text) {
-  return text.split(/,(?!\d)/).map(t => t.trim()).filter(Boolean)
+  // La coma entre dígitos es decimal ("0,5 m"), salvo que el número ya tenga punto ("USB 2.0,480Mbps").
+  return text.split(/(?<!\d),|,(?!\d)|(?<=\d\.\d+),/).map(t => t.trim()).filter(Boolean)
     .map(t => t.split("|").map(norm).filter(Boolean));
 }
 function haystack(p) {
@@ -59,13 +60,15 @@ let shipEstimate = 0;
 
 function landedCost(p, ivaIncluded) {
   const price = p.price_usd ?? 0;
-  const ship = p.shipping_usd ?? shipEstimate;
+  const freeShip = p.free_shipping_threshold != null && price >= p.free_shipping_threshold;
+  const ship = freeShip ? 0 : p.shipping_usd ?? shipEstimate;
   const base = price + ship;
   let duty = 0, iva = 0;
   if (base > CONFIG.duty_threshold_usd) duty = base * CONFIG.duty;
   if (!ivaIncluded) iva = (base + duty) * CONFIG.iva;
   const fx = CONFIG.usd_clp;
-  return { price: price * fx, ship: ship * fx, duty: duty * fx, iva: iva * fx, total: (base + duty + iva) * fx, shipKnown: p.shipping_usd != null };
+  return { price: price * fx, ship: ship * fx, duty: duty * fx, iva: iva * fx, total: (base + duty + iva) * fx,
+    priceKnown: price > 0, shipKnown: p.shipping_usd != null, shipApprox: !!p.ship_approx && p.shipping_usd != null };
 }
 
 // ---------- puntajes ----------
@@ -87,20 +90,22 @@ function productScore(p) {
   let score = rating * 0.65 + sold * 0.35;
   const flags = p.reviews?.flags || [];
   score -= flags.length * 0.25;
-  if (p.reviews && !flags.length) score += 0.1;
+  if (p.reviews?.read > 0 && !flags.length) score += 0.1;
   return clamp(score);
 }
 
 function groupClones(items) {
-  const tokens = p => new Set(p.title.toLowerCase().replace(/[^a-z0-9áéíóúñ.]+/g, " ").split(" ").filter(w => w.length > 1));
+  const tokens = p => new Set(p.title.toLowerCase().replace(/(\d)\s+([a-z])/g, "$1$2").replace(/[^a-z0-9áéíóúñ.]+/g, " ").split(" ").filter(w => w.length > 1));
   const sets = items.map(tokens);
+  // Medidas como 40gbps, 100w o 2m: si difieren, son productos distintos aunque el título se parezca.
+  const measures = s => [...s].filter(w => /^\d+(\.\d+)?[a-z]+$/.test(w)).sort().join(" ");
   const parent = items.map((_, i) => i);
   const find = i => parent[i] === i ? i : (parent[i] = find(parent[i]));
   for (let i = 0; i < items.length; i++) {
     for (let j = i + 1; j < items.length; j++) {
       const a = sets[i], b = sets[j];
       const inter = [...a].filter(w => b.has(w)).length;
-      if (inter / (a.size + b.size - inter) >= 0.7) parent[find(j)] = find(i);
+      if (inter / (a.size + b.size - inter) >= 0.7 && measures(a) === measures(b)) parent[find(j)] = find(i);
     }
   }
   const groups = {};
@@ -120,10 +125,15 @@ function evaluate(products, f) {
   for (const p of products) {
     const hay = haystack(p);
     const pick = pickVariant(p, must, exclude);
-    const cost = landedCost(pick.variant ? { ...p, price_usd: pick.variant.price_usd } : p, f.iva_included);
-    const missing = must.filter(alts => !matches(hay, alts)).map(a => a.join(" o "));
+    // El envío se cotiza para la variante más barata; con otra variante es aproximado.
+    const cheapest = pick.variant ? Math.min(...p.variants.map(v => v.price_usd)) : null;
+    const cost = landedCost(pick.variant ? { ...p, price_usd: pick.variant.price_usd, ship_approx: pick.variant.price_usd > cheapest } : p, f.iva_included);
+    const hayVariant = hay + norm(pick.variant?.label || "");
+    const missing = must.filter(alts => !matches(hayVariant, alts)).map(a => a.join(" o "));
     const banned = exclude.filter(alts => matches(hay, alts)).map(a => a.join(" o "));
     const reasons = [];
+    if (!cost.priceKnown) reasons.push("Sin precio");
+    if (p.variants?.length && p.variants.every(v => v.stock === 0)) reasons.push("Sin stock");
     const type = wantedType && productType(p.title);
     if (type && type !== wantedType) reasons.push(`Parece ${withArticle(type)}, no ${withArticle(wantedType)}`);
     if (missing.length) reasons.push("No cumple: " + missing.join(", "));
@@ -198,6 +208,7 @@ function explain(r, minTotal) {
   if (!r.sellerKnown) out.push(["con", "Sin datos de la tienda"]);
   if (p.rating_pct != null) out.push([p.rating_pct >= 95 ? "pro" : "con", `${p.rating_pct}% de valoraciones positivas, ${fmtSold(p.sold)} vendidos`]);
   if (!r.cost.shipKnown) out.push(["con", `Envío desconocido: se estimó ${clp(r.cost.ship)} (el típico de esta búsqueda)`]);
+  else if (r.cost.shipApprox) out.push(["con", "Envío cotizado para otra variante: puede variar"]);
   else if (p.ship_days) out.push([p.ship_days <= 15 ? "pro" : "con", `Llega en ~${p.ship_days} días`]);
   if (r.niceTotal) out.push([r.niceHits.length === r.niceTotal ? "pro" : "con", `Deseables: ${r.niceHits.length} de ${r.niceTotal}`]);
   (p.reviews?.flags || []).forEach(f => out.push(["bad", "Reseñas: " + f]));
@@ -285,7 +296,7 @@ function card(r, i) {
     </div>
     <div class="card-side">
       <div class="total">${clp(c.total)}</div>
-      <div class="breakdown">producto ${clp(c.price)}<br>envío ${c.shipKnown ? clp(c.ship) : "~" + clp(c.ship)}${c.duty ? ` · arancel ${clp(c.duty)}` : ""}${c.iva ? ` · IVA ${clp(c.iva)}` : ""}</div>
+      <div class="breakdown">producto ${clp(c.price)}<br>envío ${c.shipKnown && !c.shipApprox ? clp(c.ship) : "~" + clp(c.ship)}${c.duty ? ` · arancel ${clp(c.duty)}` : ""}${c.iva ? ` · IVA ${clp(c.iva)}` : ""}</div>
       <div class="score">
         <div class="score-row"><span>Puntaje</span><span class="score-num">${Math.round(r.score)}</span></div>
         <div class="bar" role="img" aria-label="Puntaje ${Math.round(r.score)} de 100"><div style="width:${r.score}%"></div></div>
@@ -335,7 +346,7 @@ function renderRanking() {
 function renderDiscarded() {
   $("#discarded-body").innerHTML = discarded.length ? discarded.map(d => `
     <div class="discard"><a class="title" href="${esc(d.p.url)}" target="_blank" rel="noopener">${esc(d.p.title)}</a>
-    <div class="meta">${esc(d.p.store.name)} · <span class="mono">${clp(d.cost.total)}</span></div>
+    <div class="meta">${esc(d.p.store.name)} · <span class="mono">${d.cost.priceKnown ? clp(d.cost.total) : "Sin precio"}</span></div>
     <div class="why">${d.reasons.map(esc).join(" · ")}</div></div>`).join("")
     : emptyState(hasSearched ? "Nada descartado en esta búsqueda." : "Aquí aparecen los productos que no cumplen, con el motivo.", false);
   setCount("n-discarded", discarded.length);
@@ -363,7 +374,7 @@ function renderCompare() {
     ${line("Puntaje", rows.map(r => v(Math.round(r.score), r.score)), hi, true)}
     ${line("Total en Chile", rows.map(r => v(clp(r.cost.total), r.cost.total)), lo, true)}
     ${line("Producto", rows.map(r => v(clp(r.cost.price))), null, true)}
-    ${line("Envío", rows.map(r => v(r.cost.shipKnown ? clp(r.cost.ship) : "~" + clp(r.cost.ship))), null, true)}
+    ${line("Envío", rows.map(r => v(r.cost.shipKnown && !r.cost.shipApprox ? clp(r.cost.ship) : "~" + clp(r.cost.ship))), null, true)}
     ${line("IVA", rows.map(r => v(clp(r.cost.iva))), null, true)}
     ${line("Días de envío", rows.map(r => v(r.p.ship_days, r.p.ship_days)), lo, true)}
     ${line("Valoración", rows.map(r => v(r.p.rating_pct != null ? r.p.rating_pct + "%" : null, r.p.rating_pct)), hi, true)}
@@ -380,6 +391,7 @@ function renderCompare() {
 
 function renderShortlist() {
   setCount("n-shortlist", shortlist.length);
+  if (document.activeElement?.matches?.(".sl textarea")) return;
   $("#shortlist-body").innerHTML = shortlist.length ? shortlist.map(s => `
     <div class="sl" data-id="${esc(s.id)}">
       <a class="title" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>
@@ -406,8 +418,9 @@ const openMore = new Set();
 // Guarda en cola para que dos guardados seguidos no lleguen desordenados.
 let saveQueue = Promise.resolve();
 function persist(path, data) {
-  saveQueue = saveQueue.then(() => api(path, { body: data })).catch(e => { toast("No se pudo guardar: " + e.message); throw e; });
-  return saveQueue.catch(() => {});
+  const result = saveQueue.then(() => api(path, { body: data }));
+  saveQueue = result.catch(() => {});
+  return result.then(() => true, e => { toast("No se pudo guardar: " + e.message); return false; });
 }
 const saveShortlist = () => persist("/api/shortlist", shortlist);
 const saveSearches = () => persist("/api/searches", searches);
@@ -505,7 +518,7 @@ document.addEventListener("click", async e => {
     reviewsLoading.add(id);
     renderRanking();
     try {
-      const data = await api("/api/reviews?id=" + encodeURIComponent(id), { method: "POST" });
+      const data = await api("/api/reviews?id=" + encodeURIComponent(id), { body: {} });
       const p = lastProducts.find(p => p.id === id);
       if (p) { p.reviews = data.reviews; if (p.rating_pct == null) p.rating_pct = data.rating_pct; }
     } catch (err) {
@@ -528,18 +541,35 @@ document.addEventListener("click", async e => {
 
 document.addEventListener("change", e => {
   if (e.target.matches("select[data-variant]")) {
-    selectedSku[e.target.dataset.variant] = e.target.value;
+    const id = e.target.dataset.variant;
+    selectedSku[id] = e.target.value;
     recompute();
+    syncShortlistVariant(id);
   }
 });
-const saveNote = debounce(async (el) => {
+// Si el producto ya estaba guardado, la lista corta sigue a la variante elegida.
+function syncShortlistVariant(id) {
+  const item = shortlist.find(s => s.id === id);
+  const hit = [...ranked.flatMap(r => [r, ...(r.clones || [])]), ...discarded].find(r => r.p.id === id);
+  const variant = hit?.p.variants?.find(v => v.sku_id === selectedSku[id]);
+  if (!item || !variant) return;
+  Object.assign(item, { variant: variant.label, sku_id: variant.sku_id, total_clp: hit.cost.total, score: hit.score ?? item.score });
+  renderShortlist();
+  saveShortlist();
+}
+const noteTimers = {};
+function saveNote(el) {
   const box = el.closest(".sl");
-  const item = shortlist.find(s => s.id === box.dataset.id);
+  const id = box.dataset.id;
+  const item = shortlist.find(s => s.id === id);
   if (!item) return;
   item.note = el.value;
-  await saveShortlist();
-  box.querySelector(".saved-note").textContent = "Nota guardada";
-}, 800);
+  clearTimeout(noteTimers[id]);
+  noteTimers[id] = setTimeout(async () => {
+    const saved = await saveShortlist();
+    box.querySelector(".saved-note").textContent = saved ? "Nota guardada" : "Nota sin guardar";
+  }, 800);
+}
 document.addEventListener("input", e => {
   if (e.target.matches(".sl textarea")) { e.target.closest(".sl").querySelector(".saved-note").textContent = ""; saveNote(e.target); }
 });
@@ -587,8 +617,7 @@ $("#save-confirm").addEventListener("click", async () => {
   if (i >= 0) searches[i] = entry; else searches.push(entry);
   closeSaveRow();
   renderSaved(name);
-  await saveSearches();
-  toast(`Búsqueda «${name}» guardada.`);
+  if (await saveSearches()) toast(`Búsqueda «${name}» guardada.`);
 });
 $("#del-search").addEventListener("click", async () => {
   const name = $("#saved").value;
@@ -596,8 +625,7 @@ $("#del-search").addEventListener("click", async () => {
   if (idx < 0) return;
   const [removed] = searches.splice(idx, 1);
   renderSaved();
-  await saveSearches();
-  toast(`Búsqueda «${name}» borrada.`, { label: "Deshacer", run: async () => { searches.splice(idx, 0, removed); renderSaved(name); await saveSearches(); } });
+  if (await saveSearches()) toast(`Búsqueda «${name}» borrada.`, { label: "Deshacer", run: async () => { searches.splice(idx, 0, removed); renderSaved(name); await saveSearches(); } });
 });
 
 // ---------- asistente ----------

@@ -61,6 +61,10 @@ def fetch_reviews(product_id):
         time.sleep(0.8)
         reviews += _fetch(product_id, page).get("evaViewList") or []
 
+    # Una respuesta vacía no debe pisar las reseñas que ya estaban guardadas.
+    if not reviews:
+        raise ValueError("AliExpress no devolvió reseñas")
+
     negatives = [r for r in reviews if (r.get("buyerEval") or 100) <= 60 and _text(r)]
     flags = []
     for flag, terms in FLAG_TERMS.items():

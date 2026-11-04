@@ -39,8 +39,11 @@ def main():
     if stamp is not None and stamp >= current:
         webbrowser.open(URL)
         return
-    if stamp is not None or pid_on_port():
-        pid = pid_on_port()
+    pid = pid_on_port()
+    if stamp is None and pid:
+        print(f"El puerto {PORT} lo está usando otro programa. Ciérralo y vuelve a abrir Smart Buy.")
+        sys.exit(1)
+    if stamp is not None:
         if pid:
             print("Reiniciando el servidor con la versión nueva…")
             subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True)

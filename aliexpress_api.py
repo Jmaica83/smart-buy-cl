@@ -170,7 +170,7 @@ def search(app_key, app_secret, session, keywords, page=1):
         p["image"] = ("https:" + image) if image and image.startswith("//") else image
         p["price_usd"] = _num(_first(it, "targetSalePrice", "salePrice", "target_sale_price", "sale_price"))
         p["original_price_usd"] = _num(_first(it, "targetOriginalPrice", "originalPrice", "target_original_price"))
-        p["rating_pct"] = _num(_first(it, "evaluateRate", "evaluate_rate"))
+        p["rating_pct"] = _num(_first(it, "evaluateRate", "evaluate_rate")) or None  # 0 = sin valoraciones
         p["sold"] = int(_num(_first(it, "orders", "lastest_volume", "volume")) or 0)
         out.append(p)
     return out
@@ -206,7 +206,7 @@ def product_detail(app_key, app_secret, session, product_id):
         "price_usd": priced[0][0] if priced else None,
         "sku_id": priced[0][1].get("sku_id") if priced else (skus[0].get("sku_id") if skus else None),
         "ship_days": _num(logistics.get("delivery_time")),
-        "rating_pct": rating * 20 if rating and rating <= 5 else rating,
+        "rating_pct": rating * 20 if rating and rating <= 5 else rating or None,  # 0 = sin valoraciones
         "sold": int(_num(base.get("sales_count")) or 0) or None,
         "store": {
             "id": str(store.get("store_id") or ""),
@@ -230,11 +230,12 @@ def _variant(price, sku):
         value = p.get("property_value_definition_name") or p.get("sku_property_value") or ""
         if value and "china" not in value.lower():  # "Envíos desde: China" no distingue variantes
             parts.append(value.strip())
+    stock = _num(sku.get("sku_available_stock"))
     return {
         "sku_id": str(sku.get("sku_id")),
         "label": " / ".join(parts) or "Única",
         "price_usd": price,
-        "stock": int(_num(sku.get("sku_available_stock")) or 0),
+        "stock": None if stock is None else int(stock),
     }
 
 
