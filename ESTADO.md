@@ -2,14 +2,15 @@
 Actualizado: 2026-11-03
 
 ## En curso
-- La búsqueda real no funciona: el refresh token venció (el token venció cerca del 2026-10-27). Darío debe correr `py autorizar.py`.
-- Sin uso por varios días, la renovación automática deja de servir y hay que autorizar de nuevo.
+- La búsqueda real funciona: Darío autorizó de nuevo el 2026-11-03.
+- Sin uso por varios días, la renovación automática deja de servir y hay que correr `py autorizar.py`.
 - La app corre con asistente conversacional, UI rediseñada, logo definitivo y acceso directo en el escritorio.
 
 ## Decidido hace poco
 - 2026-11-03: logo Paquete estrella, en tinta, dibujado con JavaScript (`logo/propuestas/logos.js`; `node logo/generar.js` rehace los archivos).
 - 2026-11-03: el nombre definitivo es Smart Buy CL.
 - 2026-11-03: se arreglaron los 15 bugs de gravedad alta y media de la revisión.
+- 2026-11-03: `design/tests.yaml` pasa 17 de 17 con datos reales.
 
 Del 2026-10-26:
 - API Drop Shipping en modo solo lectura, en vez de la de afiliados (quedó «Unmet»).
@@ -18,11 +19,10 @@ Del 2026-10-26:
 - UI con el DNA `design/dna-smartbuy.md`; entró al catálogo como `herramienta-calida`.
 
 ## Siguiente
-1. Autorizar la cuenta y comprobar con la API real, porque puede cambiar el costo:
-   - Formato de `shipping_fee_format`: `_num` borra comas, así que «US $2,35» daría 235 (`aliexpress_api.py`). Quizás convenga priorizar `shipping_fee_cent`.
-   - Si el precio con `countryCode=CL` ya trae IVA, el total sale 19% alto. Comparar con un checkout real.
-   - Si `orders` viene como «1.000+», `sold` queda en 1.
-2. Revisar el tipo de cambio: es fijo (`USD_CLP`, 950 por defecto) y no avisa su antigüedad.
+1. Comprobado el 2026-11-03 con la API real y la página de `1005011932940880`:
+   - `shipping_fee_format` viene como «US $2.99», `orders` como «10,000+» y `price_include_tax` es `False`. La página dice «VAT calculated at checkout», así que el IVA no se duplica.
+   - Sobre `free_shipping_threshold` (US$10) la página muestra «Free shipping» con retiro en punto de entrega. El envío a domicilio no se comprobó.
+2. Revisar el tipo de cambio: es fijo (`USD_CLP`, 926 en `.env` desde el 2026-11-03, sacado de $12.100 por US$13,06) y no avisa su antigüedad.
 3. Bugs menores sin arreglar:
    - XSS en campos numéricos de reseñas sin `esc()` (`reviewBlock` en `static/app.js`).
    - Comparar queda bloqueado por productos ocultos: limpiar `compareIds` en `recompute`.
