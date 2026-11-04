@@ -60,6 +60,7 @@ CACHE = DATA / "cache"
 CACHE_HOURS = 12
 DETAIL_COUNT = 50
 MAX_BRANDS = 4
+BRAND_SLOTS = 35
 # Huella del código al arrancar: el lanzador la compara para saber si el servidor quedó viejo.
 CODE_STAMP = max(f.stat().st_mtime for f in ROOT.glob("*.py"))
 CONFIG = {
@@ -170,17 +171,25 @@ def gather_products(query, brands, session):
             return []  # Una lista secundaria que falla no debe botar la búsqueda.
         return [p for p in found if not brand or brand.lower() in p["title"].lower()]
 
-    jobs = [(f"{query} {b}", 1, None, b) for b in brands]
+    # Con la marca primero y pocas palabras la API trae más de esa marca; con la frase completa,
+    # menos, pero trae las versiones específicas (como un largo poco común). Se usan ambas.
+    short = " ".join(query.split()[:3])
+    jobs = [(f"{b} {short}", 1, None, b) for b in brands] + [(f"{query} {b}", 1, None, b) for b in brands]
     jobs += [(query, 2, None, None), (query, 1, "orders,desc", None), (query, 1, "comments,desc", None)]
     with ThreadPoolExecutor(max_workers=4) as pool:
         lists = list(pool.map(fetch, jobs))
     # Se alternan las listas para que el límite de detalle no deje fuera a ninguna.
     merged = {}
-    for group in zip_longest(*lists, first):
-        for p in group:
-            if p:
-                merged.setdefault(p["id"], p)
-    return list(merged.values())[:DETAIL_COUNT]
+
+    def add(groups, limit):
+        for group in zip_longest(*groups):
+            for p in group:
+                if p and len(merged) < limit:
+                    merged.setdefault(p["id"], p)
+
+    add(lists[:2 * len(brands)], BRAND_SLOTS)
+    add([first, *lists[2 * len(brands):]], DETAIL_COUNT)
+    return list(merged.values())
 
 
 def api_search(query, brands=()):

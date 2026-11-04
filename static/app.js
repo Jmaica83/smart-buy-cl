@@ -57,6 +57,7 @@ function productType(text) {
 
 // ---------- costo real en Chile ----------
 let shipEstimate = 0;
+const BRAND_BONUS = 15;
 
 function landedCost(p, ivaIncluded) {
   const price = p.price_usd ?? 0;
@@ -115,6 +116,7 @@ function groupClones(items) {
 
 function evaluate(products, f) {
   const must = parseTerms(f.must), nice = parseTerms(f.nice), exclude = parseTerms(f.exclude);
+  const brands = parseTerms(f.brands || "").flat();
   const budget = Number(f.budget) || Infinity;
   const ok = [], out = [];
 
@@ -124,7 +126,7 @@ function evaluate(products, f) {
 
   for (const p of products) {
     const hay = haystack(p);
-    const pick = pickVariant(p, must, exclude);
+    const pick = pickVariant(p, must, exclude, hay);
     // El envío se cotiza para la variante más barata; con otra variante es aproximado.
     const cheapest = pick.variant ? Math.min(...p.variants.map(v => v.price_usd)) : null;
     const cost = landedCost(pick.variant ? { ...p, price_usd: pick.variant.price_usd, ship_approx: pick.variant.price_usd > cheapest } : p, f.iva_included);
@@ -141,7 +143,7 @@ function evaluate(products, f) {
     if (cost.total > budget) reasons.push(`Sobre presupuesto (${clp(cost.total)})`);
     if (reasons.length) { out.push({ p, cost, reasons }); continue; }
     const niceHits = nice.filter(alts => matches(hay, alts)).map(a => a[0]);
-    ok.push({ p, cost, niceHits, niceTotal: nice.length, ...pick });
+    ok.push({ p, cost, niceHits, niceTotal: nice.length, brand: matches(norm(p.title + " " + (p.store.name || "")), brands), ...pick });
   }
 
   const minTotal = Math.min(...ok.map(r => r.cost.total));
@@ -157,6 +159,7 @@ function evaluate(products, f) {
       nice: r.niceTotal ? r.niceHits.length / r.niceTotal : 1,
     };
     r.score = 100 * (w.price * r.parts.price + w.seller * r.parts.seller + w.product * r.parts.product + w.nice * r.parts.nice) / wSum;
+    if (r.brand) r.score = Math.min(100, r.score + BRAND_BONUS);
     r.sellerKnown = seller.known;
   }
   ok.sort((a, b) => b.score - a.score);
@@ -175,21 +178,21 @@ function evaluate(products, f) {
 // Elige la variante: la que eligió el usuario o, si no, la más barata que cumple los requisitos.
 // AliExpress muestra el precio de la variante más barata, que muchas veces es otra cosa
 // (por ejemplo la versión de 10Gbps de un cable anunciado como de 40Gbps).
-function pickVariant(p, must, exclude) {
+function pickVariant(p, must, exclude, hay) {
   const variants = p.variants || [];
   if (!variants.length) return { variant: null, cheapestSkipped: null };
   const chosen = variants.find(v => v.sku_id === selectedSku[p.id]);
   if (chosen) return { variant: chosen, cheapestSkipped: null, manual: true };
   let candidates = variants.filter(v => v.stock !== 0);
   if (!candidates.length) candidates = variants;
-  for (const alts of must) {
-    const ok = candidates.filter(v => matches(norm(v.label), alts));
-    if (ok.length && ok.length < candidates.length) candidates = ok;
-  }
   for (const alts of exclude) {
     const ok = candidates.filter(v => !matches(norm(v.label), alts));
     if (ok.length) candidates = ok;
   }
+  // Pesa más lo que el título no dice (como el largo): eso solo lo puede cumplir la variante.
+  const fit = v => must.reduce((n, alts) => n + (matches(norm(v.label), alts) ? (matches(hay, alts) ? 1 : 100) : 0), 0);
+  const bestFit = Math.max(...candidates.map(fit));
+  candidates = candidates.filter(v => fit(v) === bestFit);
   const variant = candidates.reduce((a, b) => (b.price_usd < a.price_usd ? b : a));
   const cheapest = variants.reduce((a, b) => (b.price_usd < a.price_usd ? b : a));
   return { variant, cheapestSkipped: cheapest.sku_id !== variant.sku_id ? cheapest : null };
@@ -201,6 +204,7 @@ function explain(r, minTotal) {
   if (r.cost.total <= minTotal * 1.001) out.push(["pro", "El más barato puesto en Chile"]);
   else if (r.parts.price >= 0.8) out.push(["pro", `Solo ${clp(r.cost.total - minTotal)} más caro que el más barato`]);
   else out.push(["con", `${clp(r.cost.total - minTotal)} más caro que el más barato`]);
+  if (r.brand) out.push(["pro", "Marca reconocida"]);
   if (s.official) out.push(["pro", "Tienda oficial de la marca"]);
   if (s.positive_pct != null) out.push([s.positive_pct >= 95 ? "pro" : "con", `Tienda con ${s.positive_pct}% de feedback positivo`]);
   if (s.described_rating != null) out.push([s.described_rating >= 4.7 ? "pro" : "con", `Tienda: ${s.described_rating}/5 en "como se describe", ${s.shipping_rating ?? "?"}/5 en envío`]);
