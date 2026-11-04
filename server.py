@@ -11,6 +11,7 @@ import re
 import time
 import webbrowser
 from concurrent.futures import ThreadPoolExecutor
+from itertools import zip_longest
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -58,6 +59,7 @@ MODE = "api" if APP_KEY and APP_SECRET and ENV.get("ALIEXPRESS_ACCESS_TOKEN") el
 CACHE = DATA / "cache"
 CACHE_HOURS = 12
 DETAIL_COUNT = 50
+MAX_BRANDS = 4
 # Huella del código al arrancar: el lanzador la compara para saber si el servidor quedó viejo.
 CODE_STAMP = max(f.stat().st_mtime for f in ROOT.glob("*.py"))
 CONFIG = {
@@ -156,13 +158,37 @@ def merge_detail(p, d):
             p["store"][key] = value
 
 
-def api_search(query):
-    session = access_token()
-    products = aliexpress_api.search(APP_KEY, APP_SECRET, session, query)
-    top = products[:DETAIL_COUNT]
+def gather_products(query, brands, session):
+    """Junta varias listas: la API entrega 20 por página y su orden favorece lo barato."""
+    first = aliexpress_api.search(APP_KEY, APP_SECRET, session, query)
+
+    def fetch(job):
+        keywords, page, sort, brand = job
+        try:
+            found = aliexpress_api.search(APP_KEY, APP_SECRET, session, keywords, page, sort)
+        except Exception:
+            return []  # Una lista secundaria que falla no debe botar la búsqueda.
+        return [p for p in found if not brand or brand.lower() in p["title"].lower()]
+
+    jobs = [(f"{query} {b}", 1, None, b) for b in brands]
+    jobs += [(query, 2, None, None), (query, 1, "orders,desc", None), (query, 1, "comments,desc", None)]
     with ThreadPoolExecutor(max_workers=4) as pool:
-        details = list(pool.map(lambda p: cached_detail(p["id"], session), top))
-    for p, d in zip(top, details):
+        lists = list(pool.map(fetch, jobs))
+    # Se alternan las listas para que el límite de detalle no deje fuera a ninguna.
+    merged = {}
+    for group in zip_longest(*lists, first):
+        for p in group:
+            if p:
+                merged.setdefault(p["id"], p)
+    return list(merged.values())[:DETAIL_COUNT]
+
+
+def api_search(query, brands=()):
+    session = access_token()
+    products = gather_products(query, brands, session)
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        details = list(pool.map(lambda p: cached_detail(p["id"], session), products))
+    for p, d in zip(products, details):
         merge_detail(p, d)
     return products
 
@@ -221,10 +247,12 @@ class Handler(SimpleHTTPRequestHandler):
         if url.path == "/api/config":
             return self.send_json(CONFIG)
         if url.path == "/api/search":
-            query = parse_qs(url.query).get("q", [""])[0].strip()
+            params = parse_qs(url.query)
+            query = params.get("q", [""])[0].strip()
+            brands = [b.strip() for b in re.split(r"[|,]", params.get("brands", [""])[0]) if b.strip()]
             try:
                 if MODE == "api":
-                    products = api_search(query)
+                    products = api_search(query, brands[:MAX_BRANDS])
                 else:
                     products = mock_search(query)
             except Exception as exc:

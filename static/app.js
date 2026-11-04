@@ -446,7 +446,7 @@ async function search() {
   tick();
   const timer = setInterval(tick, 1000);
   try {
-    const data = await api("/api/search?q=" + encodeURIComponent(q));
+    const data = await api("/api/search?q=" + encodeURIComponent(q) + "&brands=" + encodeURIComponent(form().brands));
     if (seq !== searchSeq) return false;
     lastProducts = data.products;
     compareIds = new Set();
@@ -584,6 +584,7 @@ function renderSaved(selected = "") {
 }
 function applySearch(s) {
   const f = $("#form");
+  f.elements.brands.value = "";  // Las búsquedas guardadas antes no traen marcas.
   for (const [key, value] of Object.entries(s)) {
     const el = f.elements[key];
     if (!el) continue;

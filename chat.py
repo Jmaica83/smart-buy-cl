@@ -32,6 +32,7 @@ Cómo llenar "search" (el comparador usa estas reglas):
   - must: lo imprescindible (pocas cosas, para no descartar de más).
   - nice: lo deseable, suma puntos.
   - exclude: solo lo que delata un producto equivocado (ej: "USB 2.0, 480Mbps, adaptador, llavero"). NO pongas accesorios que suelen venir incluidos en la caja (estuche, funda, cable de carga, almohadillas, repuestos): muchos títulos los mencionan y descartarías productos buenos. El comparador ya descarta solo los productos que son de otro tipo (por ejemplo una funda cuando buscas audífonos). Pocas palabras y bien específicas.
+- brands: marcas reconocidas de esa categoría separadas por |, máximo 4 (ej: "UGREEN|Anker|Belkin|Baseus"). El comparador las busca aparte, porque AliExpress muestra primero lo barato. Llénalo si la persona pide calidad, lo mejor o una marca, y repite esas marcas en nice. Si solo importa el precio, déjalo "".
 - budget: presupuesto máximo total puesto en Chile en pesos, solo dígitos, o "" si no hay límite.
 - w_price, w_seller, w_product, w_nice: pesos de 0 a 10 según lo que priorice. Precio importa mucho = w_price 8-10; confiabilidad = w_seller y w_product 8-10 y w_price 2-3; equilibrio = 6/5/6/4.
 - name: nombre corto para guardar la búsqueda (ej: "Cable USB4 confiable").
@@ -52,13 +53,14 @@ SCHEMA = {
                 "must": {"type": "string"},
                 "nice": {"type": "string"},
                 "exclude": {"type": "string"},
+                "brands": {"type": "string"},
                 "budget": {"type": "string"},
                 "w_price": {"type": "integer"},
                 "w_seller": {"type": "integer"},
                 "w_product": {"type": "integer"},
                 "w_nice": {"type": "integer"},
             },
-            "required": ["name", "q", "must", "nice", "exclude", "budget",
+            "required": ["name", "q", "must", "nice", "exclude", "brands", "budget",
                          "w_price", "w_seller", "w_product", "w_nice"],
             "additionalProperties": False,
         },

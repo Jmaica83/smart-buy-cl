@@ -147,13 +147,14 @@ def _empty_product(product_id):
 
 # ---------- búsqueda ----------
 
-def search(app_key, app_secret, session, keywords, page=1):
+def search(app_key, app_secret, session, keywords, page=1, sort=None):
+    extra = {"sortBy": sort} if sort else {}
     # A veces la búsqueda responde vacía sin error justo después de muchas consultas; se reintenta.
     for attempt in range(3):
         data = call(
             "aliexpress.ds.text.search", app_key, app_secret, session,
             keyWord=keywords, local="es_ES", countryCode="CL", currency="USD",
-            pageSize=50, pageIndex=page,
+            pageSize=50, pageIndex=page, **extra,
         )
         items = _find_list(data, "selection_search_product", "products", "product")
         if items:

@@ -11,6 +11,7 @@ Actualizado: 2026-11-03
 - 2026-11-03: el nombre definitivo es Smart Buy CL.
 - 2026-11-03: se arreglaron los 15 bugs de gravedad alta y media de la revisión.
 - 2026-11-03: `design/tests.yaml` pasa 17 de 17 con datos reales.
+- 2026-11-03: la búsqueda junta varias listas y busca marcas aparte (campo Marcas), porque la API da 20 por página y favorece lo barato.
 
 Del 2026-10-26:
 - API Drop Shipping en modo solo lectura, en vez de la de afiliados (quedó «Unmet»).
