@@ -88,8 +88,33 @@ def mock_search(query):
     return hits or products
 
 
+# Queda en True si AliExpress rechaza la renovación, aunque las fechas digan que aún servía.
+refresh_rejected = False
+
+
+def auth_status():
+    env = load_env()
+    now = time.time() * 1000
+    token_ok = int(env.get("ALIEXPRESS_TOKEN_EXPIRES") or 0) > now
+    limit = int(env.get("ALIEXPRESS_REFRESH_EXPIRES") or 0)
+    refresh_ok = not refresh_rejected and (limit > now if limit else bool(env.get("ALIEXPRESS_REFRESH_TOKEN")))
+    needs_auth = MODE == "api" and not token_ok and not refresh_ok
+    url = aliexpress_api.authorize_url(APP_KEY, autorizar.REDIRECT_URI) if needs_auth else ""
+    return {"needs_auth": needs_auth, "url": url}
+
+
+def authorize(pasted):
+    global refresh_rejected
+    code = autorizar.code_from(pasted)
+    if not code:
+        raise ValueError("Pega la dirección a la que te mandó AliExpress.")
+    autorizar.save_token(aliexpress_api.create_token(APP_KEY, APP_SECRET, code))
+    refresh_rejected = False
+
+
 def access_token():
     """Devuelve el token vigente; lo renueva si vence en menos de una hora."""
+    global refresh_rejected
     env = load_env()
     token = env.get("ALIEXPRESS_ACCESS_TOKEN", "")
     expires = int(env.get("ALIEXPRESS_TOKEN_EXPIRES") or 0)
@@ -100,7 +125,8 @@ def access_token():
             # Si el token actual sigue vigente se usa ese; se reintenta en la próxima búsqueda.
             if expires > time.time() * 1000:
                 return token
-            raise RuntimeError("La autorización de AliExpress venció. Corre py autorizar.py en la terminal.") from exc
+            refresh_rejected = True
+            raise RuntimeError("La autorización de AliExpress venció. Usa el aviso de arriba para renovarla.") from exc
         autorizar.save_token(data)
         token = data["access_token"]
     return token
@@ -255,6 +281,8 @@ class Handler(SimpleHTTPRequestHandler):
             return self.send_json({"error": "Solo se acepta desde la app local"}, 403)
         if url.path == "/api/config":
             return self.send_json(CONFIG)
+        if url.path == "/api/auth":
+            return self.send_json(auth_status())
         if url.path == "/api/search":
             params = parse_qs(url.query)
             query = params.get("q", [""])[0].strip()
@@ -284,6 +312,14 @@ class Handler(SimpleHTTPRequestHandler):
                 return self.send_json(chat.ask(history, ENV.get("CHAT_MODEL") or None))
             except chat.ChatError as exc:
                 return self.send_json({"error": str(exc)}, 502)
+        if url.path == "/api/auth":
+            length = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(length) or b"{}")
+            try:
+                authorize(body.get("url", ""))
+            except Exception as exc:
+                return self.send_json({"error": f"No se pudo autorizar: {exc}"}, 502)
+            return self.send_json({"ok": True})
         if url.path == "/api/reviews":
             product_id = parse_qs(url.query).get("id", [""])[0]
             if not product_id.isdigit():

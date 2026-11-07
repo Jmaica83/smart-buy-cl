@@ -435,6 +435,12 @@ function recompute() {
 }
 const recomputeSoon = debounce(recompute, 250);
 
+async function checkAuth() {
+  const auth = await api("/api/auth");
+  $("#auth").hidden = !auth.needs_auth;
+  $("#auth-open").dataset.open = auth.url;
+}
+
 // Devuelve true si la búsqueda terminó y es la más reciente.
 async function search() {
   const q = form().q.trim();
@@ -460,12 +466,26 @@ async function search() {
     return true;
   } catch (e) {
     if (seq === searchSeq) $("#status").innerHTML = `<span class="state-dot error">La búsqueda falló: ${esc(e.message)}</span>`;
+    checkAuth().catch(() => {});
     throw e;
   } finally {
     clearInterval(timer);
     if (seq === searchSeq) { btn.disabled = false; btn.textContent = "Buscar y comparar"; }
   }
 }
+
+$("#auth-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const input = $("#auth-url");
+  try {
+    await api("/api/auth", { body: { url: input.value } });
+    input.value = "";
+    await checkAuth();
+    toast("Autorización lista.");
+  } catch (err) {
+    toast(err.message);
+  }
+});
 
 // ---------- eventos: formulario y pestañas ----------
 $("#form").addEventListener("submit", async e => {
@@ -834,6 +854,7 @@ async function init() {
   renderSaved();
   renderAll();
   renderChat();
+  checkAuth().catch(() => {});
   // ?buscar=<nombre> abre directo una búsqueda guardada.
   const wanted = new URLSearchParams(location.search).get("buscar");
   const preset = wanted && searches.find(s => s.name === wanted);

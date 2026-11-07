@@ -7,7 +7,7 @@ El estado vive en `ESTADO.md`; se actualiza al cerrar cada chat con `/cerrar`.
 ## Cómo se ejecuta
 - `iniciar.bat` o `py iniciar.py`: abre http://localhost:8000. Reinicia el servidor si su código quedó viejo.
 - `py server.py`: solo el servidor. `PORT` cambia el puerto; `NO_BROWSER=1` no abre el navegador.
-- `py autorizar.py`: autoriza la cuenta (una vez). La URL se pega en la terminal, no en el chat.
+- Autorizar la cuenta: dura 48 horas. La app avisa cuando venció y pide la URL ahí; `py autorizar.py` hace lo mismo en la terminal. La URL nunca va en el chat.
 - `py probar_api.py [palabras]`: prueba la API y muestra la forma de las respuestas.
 - Sin credenciales en `.env`, corre en modo prueba con `data/mock_products.json`.
 - Para `design/tests.yaml`, levantar el servidor con `PORT=8001`.

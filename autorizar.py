@@ -42,14 +42,28 @@ def write_env(updates):
     ENV_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def refresh_expire(data, now_ms):
+    """Hasta cuándo sirve el refresh token, en milisegundos; 0 si AliExpress no lo dice."""
+    valid = data.get("refresh_token_valid_time")
+    return int(valid) if valid else now_ms + int(data["refresh_expires_in"]) * 1000 if data.get("refresh_expires_in") else 0
+
+
 def save_token(data):
     now_ms = int(time.time() * 1000)
     expire = data.get("expire_time") or now_ms + int(data.get("expires_in", 0)) * 1000
+    refresh_limit = refresh_expire(data, now_ms) or read_env().get("ALIEXPRESS_REFRESH_EXPIRES", "0")
     write_env({
         "ALIEXPRESS_ACCESS_TOKEN": data["access_token"],
         "ALIEXPRESS_REFRESH_TOKEN": data.get("refresh_token", ""),
         "ALIEXPRESS_TOKEN_EXPIRES": str(expire),
+        "ALIEXPRESS_REFRESH_EXPIRES": str(refresh_limit),
     })
+
+
+def code_from(pasted):
+    """Saca el código de la dirección pegada; también acepta el código solo."""
+    pasted = pasted.strip()
+    return parse_qs(urlparse(pasted).query).get("code", [pasted])[0]
 
 
 def main():
@@ -66,7 +80,7 @@ def main():
     webbrowser.open(url)
 
     pasted = input("Después de aprobar, pega aquí la dirección completa a la que te mandó (con ?code=): ").strip()
-    code = parse_qs(urlparse(pasted).query).get("code", [pasted])[0]
+    code = code_from(pasted)
     if not code:
         print("No encontré el código en lo que pegaste.")
         return
@@ -77,8 +91,11 @@ def main():
         print(f"Error al crear el token: {exc}")
         return
     save_token(data)
-    days = (int(read_env()["ALIEXPRESS_TOKEN_EXPIRES"]) - time.time() * 1000) / 86400000
-    print(f"\nListo. Token guardado en .env (vence en ~{days:.0f} días; se renueva solo).")
+    env = read_env()
+    hours = (int(env["ALIEXPRESS_TOKEN_EXPIRES"]) - time.time() * 1000) / 3600000
+    refresh = (int(env["ALIEXPRESS_REFRESH_EXPIRES"]) - time.time() * 1000) / 3600000
+    limit = f"se puede renovar por ~{refresh:.0f} horas" if refresh > 0 else "AliExpress no dijo hasta cuándo se renueva"
+    print(f"\nListo. Token guardado en .env (vence en ~{hours:.0f} horas; {limit}).")
 
 
 if __name__ == "__main__":

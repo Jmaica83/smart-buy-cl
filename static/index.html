@@ -17,6 +17,15 @@
   <div id="fx" class="topbar-meta"></div>
 </header>
 
+<div id="auth" class="banner" hidden>
+  <span class="state-dot warn">La autorización de AliExpress venció. Abre AliExpress, aprueba y pega aquí la dirección a la que te mande.</span>
+  <button type="button" id="auth-open" class="pill">Abrir AliExpress</button>
+  <form id="auth-form" class="row">
+    <input id="auth-url" aria-label="Dirección a la que te mandó AliExpress" placeholder="https://github.com/...?code=..." autocomplete="off">
+    <button type="submit" class="pill primary">Autorizar</button>
+  </form>
+</div>
+
 <div id="offline" class="banner" hidden>
   <span class="state-dot error">No hay conexión con el servidor local. Abre Smart Buy desde el acceso directo.</span>
   <button type="button" id="retry-init" class="pill">Reintentar</button>

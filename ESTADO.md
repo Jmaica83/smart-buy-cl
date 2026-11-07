@@ -3,7 +3,7 @@ Actualizado: 2026-11-03
 
 ## En curso
 - La búsqueda real funciona: Darío autorizó de nuevo el 2026-11-03.
-- Sin uso por varios días, la renovación automática deja de servir y hay que correr `py autorizar.py`.
+- El refresh token dura 48 horas, y la prueba del 2026-11-03 sugiere que renovar no lo alarga. Cuando vence, la app muestra un aviso para autorizar sin usar la terminal; `py autorizar.py` también sirve.
 - La app corre con asistente conversacional, estilo suizo-institucional, logo definitivo y acceso directo en el escritorio.
 
 ## Decidido hace poco

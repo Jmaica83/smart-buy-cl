@@ -53,6 +53,10 @@ a { color: inherit; text-underline-offset: 3px; }
   padding: 12px 24px; border-bottom: 1px solid var(--stone); background: var(--taupe);
 }
 
+#auth-form { flex: 1; min-width: 280px; }
+#auth-url { min-height: 44px; padding: 0 12px; border: 1px solid var(--field); border-radius: var(--radius); background: var(--canvas); color: var(--ink); font: 400 14px/1.4 var(--sans); }
+#auth-url::placeholder { color: var(--smoke); }
+
 /* ---------- layout: taller en dos columnas ---------- */
 .layout {
   display: grid; grid-template-columns: 360px minmax(0, 1fr); grid-template-areas: "panel main";
