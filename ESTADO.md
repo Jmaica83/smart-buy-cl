@@ -1,6 +1,15 @@
 # Estado: Aliexpress (Smart Buy CL)
 Actualizado: 2026-11-03
 
+## Hitos
+- [x] Búsqueda real con la API Drop Shipping
+- [x] Asistente conversacional
+- [x] Nombre, logo y estilo suizo-institucional
+- [x] 15 bugs de gravedad alta y media arreglados
+- [ ] Tipo de cambio revisado y con aviso de antigüedad
+- [ ] 9 bugs menores arreglados
+- [ ] `README.md` al día con la API actual
+
 ## En curso
 - La búsqueda real funciona: Darío autorizó de nuevo el 2026-11-03.
 - El refresh token dura 48 horas, y la prueba del 2026-11-03 sugiere que renovar no lo alarga. Cuando vence, la app muestra un aviso para autorizar sin usar la terminal; `py autorizar.py` también sirve.
